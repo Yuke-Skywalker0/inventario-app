@@ -1,34 +1,44 @@
 # Project State
 
-_Ultimo aggiornamento: Fase 7 completata._
+_Ultimo aggiornamento: Fase 8 completata._
 
 ## Fase corrente
-Fase 7 (Backend foundation) completata. In attesa di deploy reale (azione utente) prima di
-procedere con Fase 8 (Frontend foundation).
+Fase 8 (Frontend foundation) completata e verificata (build + anteprima locale contro il
+backend reale su Render). In attesa di deploy su Cloudflare Pages (azione utente) prima di
+procedere con Fase 9/10 (CRUD ubicazioni e prodotti).
 
 ## Stack approvato
 Cloudflare Pages (frontend) · Render free (backend) · MongoDB Atlas M0 (DB) · Backblaze B2 (immagini).
 
+## URL noti
+- Backend (Render): https://inventario-app-k5k5.onrender.com — verificato online, connesso ad Atlas.
+- Frontend (Cloudflare Pages): non ancora deployato.
+
 ## Completato
-- [x] Struttura repository (`/backend`, `/frontend`, `/docs`)
-- [x] Modelli dati: User, Workspace, Member, Location, Product, Movement, RefreshSession
-- [x] Autenticazione completa: registrazione, login, refresh con rotazione, logout, logout globale
-- [x] Sicurezza base: bcrypt, rate limiting, helmet, CORS ristretto, cookie httpOnly
-- [x] Test automatici su hashing password e ciclo JWT (6/6 passati)
-- [x] Endpoint di verifica: `GET /api/health`, `GET /api/me`
+- [x] Repository, backend foundation, autenticazione completa (vedi Fase 6-7)
+- [x] Frontend: scaffold Vite+React, design system a token (CSS variables)
+- [x] Bottom navigation (Cerca/Ubicazioni/Da comprare/Profilo) + FAB contestuale
+- [x] AuthContext con sessione persistente (refresh silenzioso all'avvio, access token solo in memoria)
+- [x] Schermata login/registrazione funzionante contro il backend reale
+- [x] Profilo con logout reale (verifica end-to-end del ciclo auth)
+- [x] Badge offline persistente
+- [x] PWA: manifest, icone (192/512/maskable/apple-touch), Service Worker (offline shell, API sempre NetworkOnly)
+- [x] Build di produzione verificata (npm run build + anteprima locale)
 
 ## In corso
-- [ ] Deploy backend su Render (serve azione utente)
-- [ ] Verifica end-to-end contro MongoDB Atlas reale (non testabile in sandbox, dominio bloccato)
+- [ ] Deploy frontend su Cloudflare Pages (serve azione utente)
+- [ ] Aggiornare `FRONTEND_ORIGIN` su Render con l'URL reale di Cloudflare Pages (altrimenti CORS blocca le richieste)
+- [ ] Test reale su smartphone (installazione PWA, login, logout)
 
 ## Mancante (prossime fasi)
-- Fase 8: Frontend foundation (React + PWA shell)
-- Fase 9: Integrazione autenticazione nel frontend
-- Fase 10-15: Workspace/ubicazioni/prodotti/inventario/movimenti/trasferimenti (CRUD + UI)
-- Fase 16+: ricerca, filtri, immagini, lista da comprare, barcode/voce, offline, PWA
+- Fase 10: Workspace/permessi UI (multi-utente)
+- Fase 11: CRUD Ubicazioni (magazzini/furgoni)
+- Fase 12-13: CRUD Prodotti + inventario per ubicazione
+- Fase 14-15: Movimenti e trasferimenti
+- Fase 16+: ricerca, filtri, immagini, lista da comprare, barcode/voce, offline reale (IndexedDB), ottimizzazioni PWA
 
 ## Debito tecnico
 Nessuno.
 
 ## Bug noti
-Nessuno (test unitari passano; test end-to-end contro Atlas reale da fare dopo il deploy).
+Nessuno. Test automatici backend: 6/6 passati. Build frontend: pulita, nessun errore.
