@@ -1,59 +1,63 @@
 # Project State
 
-_Ultimo aggiornamento: Fase 11 completata (CRUD Ubicazioni)._
+_Ultimo aggiornamento: Fase 12 completata (Prodotti + quantità)._
 
 ## Fase corrente
-Fase 11 (Ubicazioni: magazzini/furgoni) completata e testata (13/13 test backend, build
-frontend pulita). In attesa di push + deploy + verifica su dispositivo reale prima di
-procedere con Fase 12 (Prodotti).
+Fase 12 completata (in realtà copre anche il cuore delle Fasi 13-14: quantità per
+ubicazione e movimenti automatici). 34/34 test backend passati, build frontend pulita.
+In attesa di push + deploy + verifica su dispositivo reale.
 
 ## Stack approvato
 Cloudflare Pages (frontend) · Render free (backend) · MongoDB Atlas M0 (DB) · Backblaze B2 (immagini).
 
 ## URL noti
-- Backend (Render): https://inventario-app-k5k5.onrender.com — verificato online, connesso ad Atlas.
-- Frontend (Cloudflare Workers/Pages): https://inventario-app.lucaai1121.workers.dev — verificato online.
+- Backend (Render): https://inventario-app-k5k5.onrender.com
+- Frontend (Cloudflare Workers): https://inventario-app.lucaai1121.workers.dev
 
 ## Completato
-- [x] Repository, backend foundation, autenticazione completa (vedi Fase 6-7)
-- [x] Frontend: scaffold Vite+React, design system a token (CSS variables)
-- [x] Bottom navigation (Cerca/Ubicazioni/Da comprare/Profilo) + FAB contestuale via Outlet context
-- [x] AuthContext con sessione persistente (refresh silenzioso all'avvio, access token solo in memoria)
-- [x] Schermata login/registrazione funzionante contro il backend reale
-- [x] Profilo con logout reale (verifica end-to-end del ciclo auth)
-- [x] Badge offline persistente + ErrorBoundary globale
-- [x] PWA: manifest, icone, Service Worker (offline shell, API sempre NetworkOnly)
-- [x] Verificato su dispositivo reale: registrazione, login, logout, sessione persistente
-- [x] Backend: CRUD ubicazioni (`GET/POST/PUT /api/locations`, `PATCH .../toggle-active`),
-      scoperto per workspace, validazione pura testata (13 test automatici)
-- [x] Frontend: pagina Ubicazioni reale (lista, creazione, modifica, archiviazione),
-      bottom sheet riutilizzabile, card in stile "cartellino da magazzino"
+- [x] Repository, backend foundation, autenticazione completa (Fase 6-7)
+- [x] Frontend foundation: design system, navigazione, PWA, auth (Fase 8) — verificato su dispositivo
+- [x] Ubicazioni: CRUD completo, backend + frontend (Fase 11)
+- [x] **Prodotti**: CRUD completo con flusso rapido (titolo+quantità+unità+ubicazione) e
+      dettagli progressivi opzionali (categoria, marca, colore, misura, note, scorta minima)
+- [x] **Quantità per ubicazione**: modifica atomica e idempotente tramite transazione MongoDB
+      reale (Atlas M0 è un replica set) + unique index su clientOpId — stesso meccanismo che
+      servirà quando arriverà la sincronizzazione offline (Fase 21), niente da rifare
+- [x] **Movimenti**: ogni modifica quantità genera automaticamente un movimento (Sezione 16:
+      "per un +1/-1 non chiedere un modulo" — rispettato, è automatico)
+- [x] Ricerca prodotti per titolo (base — la ricerca multi-campo con filtri avanzati è Fase 16)
+- [x] Azioni rapide: +1/−1 inline in lista (se il prodotto ha una sola ubicazione), stepper
+      completo (−5/−1/+1/+5/personalizzata) nella scheda prodotto
+- [x] Scheda prodotto dedicata: quantità per ubicazione, aggiunta a nuove ubicazioni, modifica,
+      archiviazione
+- [x] 34 test automatici backend (validazione pura, nessuna dipendenza da MongoDB reale)
 
 ## In corso
-- [ ] Push del codice Fase 11 su GitHub → deploy automatico Render + Cloudflare
-- [ ] Verifica su dispositivo reale: creare un magazzino e un furgone, modificarli, archiviarli
-- [ ] Configurare UptimeRobot per tenere Render sempre sveglio (istruzioni date all'utente)
+- [ ] Push del codice su GitHub → deploy automatico
+- [ ] Verifica su dispositivo reale: creare un prodotto, modificarne la quantità, verificare
+      che due tocchi rapidi in sequenza non creino incoerenze
 
 ## Mancante (prossime fasi)
 - Fase 10: Workspace/permessi UI (rimandata: non necessaria finché l'app è single-user)
-- Fase 12-13: CRUD Prodotti + inventario per ubicazione (quantità, +/- rapido)
-- Fase 14-15: Movimenti e trasferimenti
-- Fase 16+: ricerca, filtri, immagini, lista da comprare, barcode/voce, offline reale (IndexedDB), ottimizzazioni PWA
+- Fase 15: Trasferimenti tra ubicazioni (un'interfaccia dedicata; il backend potrebbe già
+  quasi supportarlo componendo due adjust, ma un vero trasferimento atomico A→B merita
+  un endpoint proprio — prossima fase naturale)
+- Fase 16: Ricerca multi-campo avanzata + filtri (chip, bottom sheet filtri)
+- Fase 17: Immagini prodotto (upload su Backblaze B2)
+- Fase 18: Lista da comprare (scorte basse → aggiunta automatica)
+- Fase 19-20: Barcode/QR, voce
+- Fase 21: Offline reale (IndexedDB, coda di sync) — l'idempotenza lato server è già pronta
+- Fase 22+: rifiniture PWA, cronologia movimenti leggibile in UI
 
 ## Debito tecnico
-Nessuno.
+Nessuno noto. Nota di design: la cronologia movimenti (Sezione 17) esiste già nel database
+(ogni /adjust crea un Movement) ma non ha ancora una schermata dedicata — i dati ci sono,
+manca solo la UI.
 
 ## Bug noti
-Nessuno. Test automatici backend: 13/13 passati. Build frontend: pulita, nessun errore.
+Nessuno. Test automatici backend: 34/34 passati. Build frontend: pulita.
 
 ## Bug risolti
-- **[Fase 8] Schermo nero/bianco infinito se il ripristino sessione falliva** (rete assente,
-  CORS non configurato, backend addormentato): `restoreSession` non gestiva l'eccezione e lo
-  stato restava bloccato su `loading` per sempre. Corretto in `AuthContext.jsx` e
-  `api/client.js` — un errore di rete ora porta correttamente alla schermata di login.
-- Aggiunto `ErrorBoundary` globale come rete di sicurezza per qualunque futuro errore di
-  render non previsto (mostra un messaggio invece di uno schermo vuoto).
-- **[Deploy] Cloudflare "root directory not found"**: mancava `wrangler.jsonc` (nuovo flusso
-  "Workers Builds") e il campo Root directory aveva uno slash iniziale di troppo. Risolto.
-- **[Deploy] `secretOrPrivateKey must have a value`**: variabili `JWT_ACCESS_SECRET`/
-  `JWT_REFRESH_SECRET` mancanti su Render. Risolto impostandole.
+- **[Fase 8] Schermo nero/bianco infinito se il ripristino sessione falliva.** Risolto.
+- **[Deploy] Cloudflare "root directory not found"** (mancava wrangler.jsonc). Risolto.
+- **[Deploy] `secretOrPrivateKey must have a value`** (variabili JWT mancanti su Render). Risolto.

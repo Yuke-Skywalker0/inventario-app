@@ -4,6 +4,7 @@ import AuthScreen from './pages/AuthScreen';
 import AppShell from './components/AppShell';
 import Home from './pages/Home';
 import Locations from './pages/Locations';
+import ProductDetail from './pages/ProductDetail';
 import ShoppingList from './pages/ShoppingList';
 import Profile from './pages/Profile';
 import OfflineBadge from './components/OfflineBadge';
@@ -26,6 +27,7 @@ function Gate() {
     <Routes>
       <Route element={<AppShell />}>
         <Route path="/" element={<Home />} />
+        <Route path="/prodotti/:id" element={<ProductDetail />} />
         <Route path="/ubicazioni" element={<Locations />} />
         <Route path="/da-comprare" element={<ShoppingList />} />
         <Route path="/profilo" element={<Profile />} />

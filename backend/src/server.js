@@ -10,6 +10,7 @@ const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const authRoutes = require('./routes/auth');
 const meRoutes = require('./routes/me');
 const locationsRoutes = require('./routes/locations');
+const productsRoutes = require('./routes/products');
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/me', meRoutes);
 app.use('/api/locations', locationsRoutes);
+app.use('/api/products', productsRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
