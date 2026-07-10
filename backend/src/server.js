@@ -9,6 +9,7 @@ const { connectDB } = require('./config/db');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const authRoutes = require('./routes/auth');
 const meRoutes = require('./routes/me');
+const locationsRoutes = require('./routes/locations');
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/me', meRoutes);
+app.use('/api/locations', locationsRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

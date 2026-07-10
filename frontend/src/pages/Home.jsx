@@ -1,9 +1,20 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import './Home.css';
 
 export default function Home() {
+  const { setFab } = useOutletContext();
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
+
+  useEffect(() => {
+    setFab({
+      label: 'Nuovo prodotto',
+      onClick: () => alert('Aggiunta prodotto: arriva nella Fase 12')
+    });
+    return () => setFab(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="home">

@@ -49,3 +49,12 @@ Vedi gli schemi Mongoose in `backend/src/models/`. Punti chiave:
 - Ogni refresh token è tracciato in `RefreshSession` (solo l'hash, mai in chiaro) → abilita revoca
   singola, logout globale, e in futuro una lista dispositivi senza refactor.
 - Rotazione: ogni refresh invalida il token precedente ed emette una nuova coppia.
+
+## Uptime (keep-alive backend)
+
+Render free va in sleep dopo 15 minuti di inattività. Per eliminare questo comportamento è
+stato aggiunto **UptimeRobot** (piano gratuito, nessuna carta) che chiama `GET /api/health`
+ogni 5 minuti. Questo consuma circa 744 delle 750 ore/mese incluse nel piano gratuito di
+Render — sufficiente per tenerlo acceso 24/7 senza superare la soglia, ma senza margine per
+un secondo servizio Render gratuito in futuro (da tenere presente se si aggiungeranno altri
+servizi sulla stessa piattaforma).
