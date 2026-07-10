@@ -7,6 +7,7 @@ import Locations from './pages/Locations';
 import ShoppingList from './pages/ShoppingList';
 import Profile from './pages/Profile';
 import OfflineBadge from './components/OfflineBadge';
+import ErrorBoundary from './components/ErrorBoundary';
 
 function Gate() {
   const { status } = useAuth();
@@ -36,11 +37,13 @@ function Gate() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <OfflineBadge />
-        <Gate />
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <OfflineBadge />
+          <Gate />
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }

@@ -15,7 +15,15 @@ export function AuthProvider({ children }) {
     let cancelled = false;
 
     async function restoreSession() {
-      const token = await refreshAccessToken();
+      let token = null;
+      try {
+        token = await refreshAccessToken();
+      } catch {
+        // Rete irraggiungibile, CORS non configurato, backend addormentato
+        // e non ancora sveglio, ecc: in ogni caso non deve bloccare l'app
+        // sulla schermata di caricamento all'infinito. Si mostra il login.
+        token = null;
+      }
       if (cancelled) return;
 
       if (!token) {

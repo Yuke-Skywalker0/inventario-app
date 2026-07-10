@@ -42,3 +42,11 @@ Nessuno.
 
 ## Bug noti
 Nessuno. Test automatici backend: 6/6 passati. Build frontend: pulita, nessun errore.
+
+## Bug risolti
+- **[Fase 8] Schermo nero/bianco infinito se il ripristino sessione falliva** (rete assente,
+  CORS non configurato, backend addormentato): `restoreSession` non gestiva l'eccezione e lo
+  stato restava bloccato su `loading` per sempre. Corretto in `AuthContext.jsx` e
+  `api/client.js` — un errore di rete ora porta correttamente alla schermata di login.
+- Aggiunto `ErrorBoundary` globale come rete di sicurezza per qualunque futuro errore di
+  render non previsto (mostra un messaggio invece di uno schermo vuoto).

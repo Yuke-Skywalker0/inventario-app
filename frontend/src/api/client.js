@@ -15,10 +15,19 @@ export function getAccessToken() {
 }
 
 async function refreshAccessToken() {
-  const res = await fetch(`${API_URL}/auth/refresh`, {
-    method: 'POST',
-    credentials: 'include'
-  });
+  let res;
+  try {
+    res = await fetch(`${API_URL}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include'
+    });
+  } catch {
+    // Backend irraggiungibile (rete assente, CORS bloccato, cold-start
+    // Render che non risponde in tempo): trattato come "nessuna sessione",
+    // mai come crash dell'app.
+    accessToken = null;
+    return null;
+  }
   if (!res.ok) {
     accessToken = null;
     return null;
