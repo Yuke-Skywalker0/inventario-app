@@ -11,6 +11,7 @@ const authRoutes = require('./routes/auth');
 const meRoutes = require('./routes/me');
 const locationsRoutes = require('./routes/locations');
 const productsRoutes = require('./routes/products');
+const shoppingListRoutes = require('./routes/shoppingList');
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/me', meRoutes);
 app.use('/api/locations', locationsRoutes);
 app.use('/api/products', productsRoutes);
+app.use('/api/shopping-list', shoppingListRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

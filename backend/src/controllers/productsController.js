@@ -6,6 +6,7 @@ const { asyncHandler } = require('../middleware/errorHandler');
 const { validateProductInput } = require('../utils/validateProductInput');
 const { validateAdjustInput } = require('../utils/validateAdjustInput');
 const { validateTransferInput } = require('../utils/validateTransferInput');
+const { applyAdjustment } = require('../services/inventoryService');
 
 const MAX_PAGE_SIZE = 200;
 const DEFAULT_PAGE_SIZE = 50;
@@ -131,14 +132,12 @@ const toggleArchived = asyncHandler(async (req, res) => {
 });
 
 // Usata solo internamente per interrompere la transazione in modo pulito
-// quando l'esito non è un errore di sistema ma una condizione applicativa
-// prevista (prodotto non trovato, quantità insufficiente).
+// (rimane qui anche per transfer, sotto).
 class AbortTransaction extends Error {}
 
 // POST /api/products/:id/adjust — cuore del sistema (Sezione 15, 16, 38).
-// Atomico (transazione MongoDB) e idempotente (clientOpId univoco):
-// se la stessa richiesta arriva due volte (retry di rete dopo offline),
-// la seconda volta non applica l'effetto una seconda volta.
+// La logica atomica/idempotente vive in services/inventoryService.js,
+// riusata anche dalla Lista da comprare (Sezione 56: niente duplicati).
 const adjust = asyncHandler(async (req, res) => {
   const result = validateAdjustInput(req.body);
   if (!result.valid) {
@@ -146,83 +145,18 @@ const adjust = asyncHandler(async (req, res) => {
   }
   const { locationId, delta, type, reason, note, clientOpId } = result.data;
 
-  const session = await mongoose.startSession();
-  let outcome;
+  const outcome = await applyAdjustment({
+    workspaceId: req.workspaceId,
+    productId: req.params.id,
+    locationId,
+    delta,
+    type,
+    reason,
+    note,
+    userId: req.userId,
+    clientOpId
+  });
 
-  try {
-    await session.withTransaction(async () => {
-      const product = await Product.findOne({
-        _id: req.params.id,
-        workspaceId: req.workspaceId
-      }).session(session);
-
-      if (!product) {
-        outcome = { status: 404, body: { error: 'Prodotto non trovato' } };
-        throw new AbortTransaction();
-      }
-
-      const entry = product.inventory.find((i) => i.locationId.toString() === locationId);
-      const currentQuantity = entry ? entry.quantity : 0;
-      const quantityAfter = currentQuantity + delta;
-
-      if (quantityAfter < 0) {
-        outcome = {
-          status: 409,
-          body: { error: 'Quantità insufficiente: disponibili ' + currentQuantity }
-        };
-        throw new AbortTransaction();
-      }
-
-      // L'unique index su clientOpId fa da guardia per l'idempotenza:
-      // se questa chiamata è un retry, l'insert fallisce con codice 11000
-      // e la transazione viene abortita SENZA toccare il prodotto.
-      await Movement.create(
-        [
-          {
-            workspaceId: req.workspaceId,
-            productId: product._id,
-            locationId,
-            type,
-            delta,
-            quantityAfter,
-            userId: req.userId,
-            reason,
-            note,
-            clientOpId
-          }
-        ],
-        { session }
-      );
-
-      if (entry) {
-        entry.quantity = quantityAfter;
-      } else {
-        product.inventory.push({ locationId, quantity: quantityAfter });
-      }
-      product.updatedBy = req.userId;
-      await product.save({ session });
-
-      outcome = { status: 200, body: { product } };
-    });
-  } catch (err) {
-    if (err instanceof AbortTransaction) {
-      // outcome già impostato sopra (404 o 409)
-    } else if (err.code === 11000) {
-      // Retry idempotente: l'operazione era già stata applicata in
-      // precedenza. Non è un errore per il client: ritorniamo lo stato
-      // attuale del prodotto, così l'interfaccia resta coerente.
-      const current = await Product.findOne({
-        _id: req.params.id,
-        workspaceId: req.workspaceId
-      });
-      outcome = { status: 200, body: { product: current, idempotentReplay: true } };
-    } else {
-      await session.endSession();
-      throw err;
-    }
-  }
-
-  await session.endSession();
   res.status(outcome.status).json(outcome.body);
 });
 

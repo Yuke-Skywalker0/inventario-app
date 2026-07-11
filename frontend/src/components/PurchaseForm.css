@@ -1,0 +1,53 @@
+.purchase-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.purchase-form-product {
+  font-size: var(--text-lg);
+  font-weight: var(--font-display-weight);
+  letter-spacing: var(--font-display-spacing);
+}
+
+.purchase-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-ink-muted);
+}
+
+.purchase-field input,
+.purchase-field select {
+  height: var(--touch-target);
+  padding: 0 var(--space-4);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-size: var(--text-base);
+}
+
+.purchase-error {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.purchase-submit {
+  height: var(--touch-target);
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: var(--text-base);
+}
+
+.purchase-submit:disabled {
+  opacity: 0.6;
+}
