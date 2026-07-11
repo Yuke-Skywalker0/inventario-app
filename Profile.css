@@ -1,0 +1,5 @@
+/* Stili globali aggiuntivi non coperti da base.css */
+.boot-screen {
+  min-height: 100vh;
+  background: var(--color-bg);
+}

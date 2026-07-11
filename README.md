@@ -1,42 +1,50 @@
-# Inventario App
+// Ridimensiona e comprime un'immagine nel browser prima dell'upload,
+// per rispettare lo storage gratuito limitato (Sezione 22) e velocizzare
+// il caricamento su reti lente (Sezione 25/27). Rimuove anche i dati
+// EXIF, dato che ridisegnare l'immagine su un canvas non li copia.
+export function compressImage(file, { maxDimension = 1600, quality = 0.82 } = {}) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
 
-PWA mobile-first, offline-first, multi-magazzino, a costo 0€/mese.
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
 
-## Struttura del repository
+      let { width, height } = img;
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = Math.round((height * maxDimension) / width);
+          width = maxDimension;
+        } else {
+          width = Math.round((width * maxDimension) / height);
+          height = maxDimension;
+        }
+      }
 
-```
-/backend    API Node.js/Express + MongoDB (deploy su Render)
-/frontend   PWA React (deploy su Cloudflare Pages) — in costruzione, Fase 8
-/docs       Documentazione di progetto e architettura
-```
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
 
-## Stack
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error('Impossibile elaborare questa immagine'));
+            return;
+          }
+          resolve(blob);
+        },
+        'image/webp',
+        quality
+      );
+    };
 
-- **Frontend:** React (PWA) → Cloudflare Pages
-- **Backend:** Node.js/Express → Render (free tier)
-- **Database:** MongoDB Atlas (M0 free)
-- **Immagini:** Backblaze B2 (free tier, 10GB)
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Impossibile leggere questa immagine'));
+    };
 
-Dettagli completi delle decisioni architetturali in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
-
-## Setup locale — backend
-
-```bash
-cd backend
-npm install
-cp .env.example .env   # poi compila i valori, vedi docs/ENV_VARS.md
-npm run dev
-```
-
-Il server parte su `http://localhost:3000`. Endpoint di verifica: `GET /api/health`.
-
-## Test
-
-```bash
-cd backend
-npm test
-```
-
-## Stato del progetto
-
-Vedi [`docs/PROJECT_STATE.md`](docs/PROJECT_STATE.md) per la fase corrente, le decisioni prese e cosa manca.
+    img.src = objectUrl;
+  });
+}
