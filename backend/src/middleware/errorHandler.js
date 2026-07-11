@@ -9,6 +9,10 @@ function asyncHandler(fn) {
 function errorHandler(err, req, res, next) {
   console.error('[error]', err);
 
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ error: 'Immagine troppo grande (massimo 8MB)' });
+  }
+
   if (err.code === 11000) {
     return res.status(409).json({ error: 'Risorsa già esistente' });
   }

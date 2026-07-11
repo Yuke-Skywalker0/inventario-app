@@ -78,4 +78,17 @@ productSchema.index({ workspaceId: 1, archived: 1 });
 productSchema.index({ workspaceId: 1, barcode: 1 });
 productSchema.index({ workspaceId: 1, 'inventory.locationId': 1 });
 
+// Campo calcolato, non salvato su DB: l'URL pubblico dell'immagine si
+// costruisce a partire dalla chiave (mainImage) e dalla configurazione B2
+// corrente. Se in futuro cambiasse provider di storage, basta cambiare
+// questa funzione — nessuna migrazione dati necessaria.
+productSchema.virtual('mainImageUrl').get(function () {
+  if (!this.mainImage) return null;
+  const { publicUrlFor } = require('../config/b2');
+  return publicUrlFor(this.mainImage);
+});
+
+productSchema.set('toJSON', { virtuals: true });
+productSchema.set('toObject', { virtuals: true });
+
 module.exports = mongoose.model('Product', productSchema);

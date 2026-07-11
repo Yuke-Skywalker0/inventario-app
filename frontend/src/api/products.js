@@ -35,7 +35,19 @@ export async function toggleProductArchived(id) {
   return data.product;
 }
 
-// clientOpId generato qui, lato client: è la chiave che rende l'operazione
+export async function transferProduct(productId, { fromLocationId, toLocationId, quantity, note }) {
+  const clientOpId =
+    typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  const data = await apiJson(`/products/${productId}/transfer`, {
+    method: 'POST',
+    body: JSON.stringify({ fromLocationId, toLocationId, quantity, note, clientOpId })
+  });
+  return data.product;
+}
+// clientOpId generato lato client: è la chiave che rende ogni operazione
 // idempotente (Sezione 38) — fondamentale già da ora, e ancora di più
 // quando arriverà la coda offline (Fase 21) che potrà fare retry.
 export async function adjustQuantity(productId, { locationId, delta, type, reason, note }) {

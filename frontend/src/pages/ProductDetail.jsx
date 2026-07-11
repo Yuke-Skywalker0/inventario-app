@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getProduct, updateProduct, toggleProductArchived, adjustQuantity } from '../api/products';
+import { getProduct, updateProduct, toggleProductArchived, adjustQuantity, transferProduct } from '../api/products';
 import { listLocations } from '../api/locations';
 import QuantityStepper from '../components/QuantityStepper';
 import BottomSheet from '../components/BottomSheet';
 import ProductForm from '../components/ProductForm';
+import TransferForm from '../components/TransferForm';
+import ProductImage from '../components/ProductImage';
 import './ProductDetail.css';
 
 export default function ProductDetail() {
@@ -14,6 +16,7 @@ export default function ProductDetail() {
   const [locationsById, setLocationsById] = useState({});
   const [error, setError] = useState('');
   const [editOpen, setEditOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
   const [adjustingLocationId, setAdjustingLocationId] = useState(null);
 
   const load = useCallback(async () => {
@@ -49,6 +52,12 @@ export default function ProductDetail() {
     setEditOpen(false);
   }
 
+  async function handleTransfer(values) {
+    const updated = await transferProduct(id, values);
+    setProduct(updated);
+    setTransferOpen(false);
+  }
+
   async function handleToggleArchived() {
     const updated = await toggleProductArchived(id);
     setProduct(updated);
@@ -78,6 +87,7 @@ export default function ProductDetail() {
       </button>
 
       <div className="product-detail-header">
+        <ProductImage product={product} onChange={setProduct} />
         <h1>{product.title}</h1>
         {product.category && <p className="product-detail-category">{product.category}</p>}
         <p className="product-detail-total">
@@ -157,10 +167,19 @@ export default function ProductDetail() {
         <button type="button" className="product-detail-edit" onClick={() => setEditOpen(true)}>
           Modifica
         </button>
+        {totalQuantity > 0 && (
+          <button type="button" className="product-detail-transfer" onClick={() => setTransferOpen(true)}>
+            Trasferisci
+          </button>
+        )}
         <button type="button" className="product-detail-archive" onClick={handleToggleArchived}>
           {product.archived ? 'Riattiva' : 'Archivia'}
         </button>
       </div>
+
+      <BottomSheet open={transferOpen} onClose={() => setTransferOpen(false)} title="Trasferisci">
+        <TransferForm product={product} locationsById={locationsById} onSubmit={handleTransfer} />
+      </BottomSheet>
 
       <BottomSheet open={editOpen} onClose={() => setEditOpen(false)} title="Modifica prodotto">
         <ProductForm initialValue={product} onSubmit={handleEditSubmit} submitLabel="Salva modifiche" />

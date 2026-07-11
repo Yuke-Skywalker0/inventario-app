@@ -5,6 +5,7 @@ const Location = require('../models/Location');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { validateProductInput } = require('../utils/validateProductInput');
 const { validateAdjustInput } = require('../utils/validateAdjustInput');
+const { validateTransferInput } = require('../utils/validateTransferInput');
 
 const MAX_PAGE_SIZE = 200;
 const DEFAULT_PAGE_SIZE = 50;
@@ -225,4 +226,99 @@ const adjust = asyncHandler(async (req, res) => {
   res.status(outcome.status).json(outcome.body);
 });
 
-module.exports = { list, getOne, create, update, toggleArchived, adjust };
+// POST /api/products/:id/transfer — Sezione 8: "Un trasferimento deve essere
+// una singola operazione logica": non deve poter succedere che la
+// sottrazione riesca e l'aggiunta fallisca lasciando dati incoerenti.
+// Stessa garanzia di /adjust: transazione MongoDB reale + idempotenza
+// tramite clientOpId. Viene registrato UN SOLO movimento (tipo
+// 'trasferimento', con locationId=origine e toLocationId=destinazione),
+// non due movimenti separati: rispecchia che è una singola operazione.
+const transfer = asyncHandler(async (req, res) => {
+  const result = validateTransferInput(req.body);
+  if (!result.valid) {
+    return res.status(400).json({ error: result.error });
+  }
+  const { fromLocationId, toLocationId, quantity, clientOpId, note } = result.data;
+
+  const session = await mongoose.startSession();
+  let outcome;
+
+  try {
+    await session.withTransaction(async () => {
+      const product = await Product.findOne({
+        _id: req.params.id,
+        workspaceId: req.workspaceId
+      }).session(session);
+
+      if (!product) {
+        outcome = { status: 404, body: { error: 'Prodotto non trovato' } };
+        throw new AbortTransaction();
+      }
+
+      const fromEntry = product.inventory.find((i) => i.locationId.toString() === fromLocationId);
+      const fromQuantity = fromEntry ? fromEntry.quantity : 0;
+
+      if (fromQuantity < quantity) {
+        outcome = {
+          status: 409,
+          body: { error: 'Quantità insufficiente nell\'ubicazione di origine: disponibili ' + fromQuantity }
+        };
+        throw new AbortTransaction();
+      }
+
+      const toEntry = product.inventory.find((i) => i.locationId.toString() === toLocationId);
+      const toQuantityAfter = (toEntry ? toEntry.quantity : 0) + quantity;
+      const fromQuantityAfter = fromQuantity - quantity;
+
+      // Guardia di idempotenza: se questo clientOpId è già stato usato
+      // (retry), l'insert fallisce con 11000 e la transazione abortisce
+      // SENZA toccare l'inventario — vedi il catch sotto.
+      await Movement.create(
+        [
+          {
+            workspaceId: req.workspaceId,
+            productId: product._id,
+            locationId: fromLocationId,
+            toLocationId,
+            type: 'trasferimento',
+            delta: -quantity,
+            quantityAfter: fromQuantityAfter,
+            userId: req.userId,
+            note,
+            clientOpId
+          }
+        ],
+        { session }
+      );
+
+      fromEntry.quantity = fromQuantityAfter;
+      if (toEntry) {
+        toEntry.quantity = toQuantityAfter;
+      } else {
+        product.inventory.push({ locationId: toLocationId, quantity: toQuantityAfter });
+      }
+      product.updatedBy = req.userId;
+      await product.save({ session });
+
+      outcome = { status: 200, body: { product } };
+    });
+  } catch (err) {
+    if (err instanceof AbortTransaction) {
+      // outcome già impostato sopra
+    } else if (err.code === 11000) {
+      const current = await Product.findOne({
+        _id: req.params.id,
+        workspaceId: req.workspaceId
+      });
+      outcome = { status: 200, body: { product: current, idempotentReplay: true } };
+    } else {
+      await session.endSession();
+      throw err;
+    }
+  }
+
+  await session.endSession();
+  res.status(outcome.status).json(outcome.body);
+});
+
+module.exports = { list, getOne, create, update, toggleArchived, adjust, transfer };

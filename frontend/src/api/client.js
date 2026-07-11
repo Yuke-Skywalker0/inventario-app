@@ -46,7 +46,7 @@ export async function apiFetch(path, options = {}) {
       ...options,
       credentials: 'include',
       headers: {
-        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(options.body && !options.isFormData ? { 'Content-Type': 'application/json' } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options.headers
       }

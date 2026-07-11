@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { listProducts, createProduct, adjustQuantity } from '../api/products';
+import { listLocations } from '../api/locations';
 import BottomSheet from '../components/BottomSheet';
 import ProductForm from '../components/ProductForm';
 import ProductCard from '../components/ProductCard';
@@ -10,6 +11,7 @@ export default function Home() {
   const { setFab } = useOutletContext();
   const [query, setQuery] = useState('');
   const [products, setProducts] = useState(null); // null = primo caricamento
+  const [locationsById, setLocationsById] = useState({});
   const [error, setError] = useState('');
   const [sheetOpen, setSheetOpen] = useState(false);
   const inputRef = useRef(null);
@@ -37,6 +39,14 @@ export default function Home() {
     setFab({ label: 'Nuovo prodotto', onClick: () => setSheetOpen(true) });
     return () => setFab(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    listLocations({ includeInactive: true })
+      .then((locations) => setLocationsById(Object.fromEntries(locations.map((l) => [l._id, l]))))
+      .catch(() => {
+        /* non blocca la ricerca: le card mostreranno solo il conteggio ubicazioni */
+      });
   }, []);
 
   async function handleCreate(payload) {
@@ -100,7 +110,12 @@ export default function Home() {
       {!error && products !== null && products.length > 0 && (
         <div className="product-list">
           {products.map((product) => (
-            <ProductCard key={product._id} product={product} onQuickAdjust={handleQuickAdjust} />
+            <ProductCard
+              key={product._id}
+              product={product}
+              locationsById={locationsById}
+              onQuickAdjust={handleQuickAdjust}
+            />
           ))}
         </div>
       )}

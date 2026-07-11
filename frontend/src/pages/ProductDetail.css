@@ -16,7 +16,12 @@
   margin-bottom: var(--space-3);
 }
 
+.product-detail-header {
+  text-align: center;
+}
+
 .product-detail-header h1 {
+  margin-top: var(--space-4);
   font-size: var(--text-xl);
   font-weight: var(--font-display-weight);
   letter-spacing: var(--font-display-spacing);
@@ -127,12 +132,15 @@
 .product-detail-actions {
   margin-top: var(--space-7);
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-3);
 }
 
 .product-detail-edit,
+.product-detail-transfer,
 .product-detail-archive {
   flex: 1;
+  min-width: 100px;
   height: var(--touch-target);
   border-radius: var(--radius-md);
   font-weight: 700;
@@ -142,6 +150,11 @@
 .product-detail-edit {
   background: var(--color-accent);
   color: var(--color-accent-ink);
+}
+
+.product-detail-transfer {
+  border: 1.5px solid var(--color-info);
+  color: var(--color-info);
 }
 
 .product-detail-archive {

@@ -50,6 +50,24 @@ Vedi gli schemi Mongoose in `backend/src/models/`. Punti chiave:
   singola, logout globale, e in futuro una lista dispositivi senza refactor.
 - Rotazione: ogni refresh invalida il token precedente ed emette una nuova coppia.
 
+## Immagini (Backblaze B2)
+
+Le foto vengono compresse **nel browser** prima dell'invio (ridimensionate a un massimo di
+1600px sul lato lungo, convertite in WebP qualità 0.82 — rimuove anche i dati EXIF) e poi
+caricate attraverso il backend (non con URL pre-firmate dirette): questo permette una vera
+validazione server-side del tipo di file, invece di fidarsi solo del client (Sezione 34).
+
+**Nota importante sulla visibilità:** Backblaze B2, a differenza di Amazon S3, non supporta
+ACL per singolo file — la visibilità (pubblica o privata) è decisa a livello dell'intero
+bucket. Per questo il bucket immagini deve essere impostato su **Public** nella dashboard
+Backblaze. Le chiavi dei file sono comunque UUID casuali non enumerabili, quindi nessuno può
+scoprire un'immagine senza già conoscerne l'URL esatto. Se in futuro servisse un controllo
+di accesso più stretto (es. inventario con foto sensibili), la soluzione sarebbe passare a
+URL pre-firmate con scadenza — cambio contenuto nel solo backend, senza toccare il frontend.
+
+Sostituendo una foto, quella precedente viene eliminata da B2 per non accumulare file orfani
+sui 10GB gratuiti.
+
 ## Uptime (keep-alive backend)
 
 Render free va in sleep dopo 15 minuti di inattività. Per eliminare questo comportamento è

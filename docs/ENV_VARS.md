@@ -15,6 +15,8 @@
 | `B2_KEY_ID` | Backblaze B2 | Segreta | dashboard Backblaze → App Keys (Fase 17) |
 | `B2_APPLICATION_KEY` | Backblaze B2 | Segreta | dashboard Backblaze → App Keys (Fase 17) |
 | `B2_BUCKET_NAME` | Backblaze B2 | Pubblica | nome del bucket creato (Fase 17) |
+| `B2_ENDPOINT` | Backblaze B2 | Pubblica | dettagli bucket → campo "Endpoint", es. `https://s3.us-west-004.backblazeb2.com` |
+| `B2_REGION` | Backblaze B2 | Pubblica | la parte centrale dell'endpoint, es. `us-west-004` |
 
 **Generare i secret JWT** (esegui in locale, poi incolla il risultato su Render — non committare mai):
 ```bash
