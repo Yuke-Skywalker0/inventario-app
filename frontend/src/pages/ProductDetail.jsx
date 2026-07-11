@@ -47,7 +47,10 @@ export default function ProductDetail() {
   }
 
   async function handleEditSubmit(payload) {
-    const updated = await updateProduct(id, payload);
+    return updateProduct(id, payload);
+  }
+
+  function handleEditComplete(updated) {
     setProduct(updated);
     setEditOpen(false);
   }
@@ -182,7 +185,7 @@ export default function ProductDetail() {
       </BottomSheet>
 
       <BottomSheet open={editOpen} onClose={() => setEditOpen(false)} title="Modifica prodotto">
-        <ProductForm initialValue={product} onSubmit={handleEditSubmit} submitLabel="Salva modifiche" />
+        <ProductForm initialValue={product} onSubmit={handleEditSubmit} onComplete={handleEditComplete} submitLabel="Salva modifiche" />
       </BottomSheet>
     </div>
   );

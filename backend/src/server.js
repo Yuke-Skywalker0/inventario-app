@@ -14,6 +14,11 @@ const productsRoutes = require('./routes/products');
 
 const app = express();
 
+// Render (come quasi ogni hosting) mette il backend dietro un reverse
+// proxy: senza questa riga, express-rate-limit non riesce a identificare
+// correttamente l'IP del chiamante dall'header X-Forwarded-For.
+app.set('trust proxy', 1);
+
 app.use(helmet());
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());

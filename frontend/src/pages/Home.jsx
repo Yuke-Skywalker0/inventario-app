@@ -50,8 +50,11 @@ export default function Home() {
   }, []);
 
   async function handleCreate(payload) {
-    const created = await createProduct(payload);
-    setProducts((prev) => [created, ...(prev || [])]);
+    return createProduct(payload);
+  }
+
+  function handleCreateComplete(product) {
+    setProducts((prev) => [product, ...(prev || [])]);
     setSheetOpen(false);
   }
 
@@ -121,7 +124,7 @@ export default function Home() {
       )}
 
       <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Nuovo prodotto">
-        <ProductForm onSubmit={handleCreate} submitLabel="Crea prodotto" />
+        <ProductForm onSubmit={handleCreate} onComplete={handleCreateComplete} submitLabel="Crea prodotto" />
       </BottomSheet>
     </div>
   );

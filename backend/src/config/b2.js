@@ -5,13 +5,21 @@ const { S3Client } = require('@aws-sdk/client-s3');
 // (sezione "Endpoint"), es. endpoint: https://s3.us-west-004.backblazeb2.com,
 // region: us-west-004. Vedi docs/ENV_VARS.md.
 function createB2Client() {
-  const endpoint = process.env.B2_ENDPOINT;
+  let endpoint = process.env.B2_ENDPOINT;
   const region = process.env.B2_REGION;
   const keyId = process.env.B2_KEY_ID;
   const applicationKey = process.env.B2_APPLICATION_KEY;
 
   if (!endpoint || !region || !keyId || !applicationKey) {
     return null;
+  }
+
+  // Errore comune: incollare l'endpoint senza lo schema (es.
+  // "s3.eu-central-003.backblazeb2.com" invece di "https://...").
+  // Lo correggiamo qui invece di far fallire ogni richiesta con un
+  // TypeError poco chiaro.
+  if (!/^https?:\/\//i.test(endpoint)) {
+    endpoint = `https://${endpoint}`;
   }
 
   return new S3Client({
@@ -26,9 +34,12 @@ function createB2Client() {
 
 function publicUrlFor(key) {
   if (!key) return null;
-  const endpoint = process.env.B2_ENDPOINT;
+  let endpoint = process.env.B2_ENDPOINT;
   const bucket = process.env.B2_BUCKET_NAME;
   if (!endpoint || !bucket) return null;
+  if (!/^https?:\/\//i.test(endpoint)) {
+    endpoint = `https://${endpoint}`;
+  }
   return `${endpoint}/${bucket}/${key}`;
 }
 
