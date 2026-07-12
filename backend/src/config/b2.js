@@ -1,4 +1,5 @@
-const { S3Client } = require('@aws-sdk/client-s3');
+const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 // Backblaze B2 espone un'API compatibile S3. L'endpoint e la region
 // vanno copiati dai dettagli del bucket sulla dashboard Backblaze
@@ -16,8 +17,6 @@ function createB2Client() {
 
   // Errore comune: incollare l'endpoint senza lo schema (es.
   // "s3.eu-central-003.backblazeb2.com" invece di "https://...").
-  // Lo correggiamo qui invece di far fallire ogni richiesta con un
-  // TypeError poco chiaro.
   if (!/^https?:\/\//i.test(endpoint)) {
     endpoint = `https://${endpoint}`;
   }
@@ -32,15 +31,25 @@ function createB2Client() {
   });
 }
 
-function publicUrlFor(key) {
+// Il bucket è PRIVATO (Backblaze richiede una carta di credito per
+// abilitare bucket pubblici, anche se l'addebito è minimo — vedi ADL).
+// Per mostrare le immagini generiamo quindi un URL firmato a scadenza,
+// valido solo per qualche ora: nessuna carta, nessun costo, e in più le
+// immagini non sono permanentemente accessibili da chiunque abbia il link.
+const SIGNED_URL_EXPIRY_SECONDS = 6 * 60 * 60; // 6 ore
+
+async function getSignedImageUrl(key) {
   if (!key) return null;
-  let endpoint = process.env.B2_ENDPOINT;
-  const bucket = process.env.B2_BUCKET_NAME;
-  if (!endpoint || !bucket) return null;
-  if (!/^https?:\/\//i.test(endpoint)) {
-    endpoint = `https://${endpoint}`;
+  const b2 = createB2Client();
+  if (!b2) return null;
+
+  try {
+    const command = new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key });
+    return await getSignedUrl(b2, command, { expiresIn: SIGNED_URL_EXPIRY_SECONDS });
+  } catch (err) {
+    console.error('[b2] impossibile generare URL firmata:', err.message);
+    return null;
   }
-  return `${endpoint}/${bucket}/${key}`;
 }
 
-module.exports = { createB2Client, publicUrlFor };
+module.exports = { createB2Client, getSignedImageUrl };

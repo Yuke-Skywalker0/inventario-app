@@ -3,6 +3,7 @@ const ShoppingListItem = require('../models/ShoppingListItem');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { validateShoppingListInput, validatePurchaseInput } = require('../utils/validateShoppingListInput');
 const { applyAdjustment } = require('../services/inventoryService');
+const { withImageUrl } = require('../services/imageUrlService');
 
 // GET /api/shopping-list — unisce le voci automatiche (scorta bassa/esaurito,
 // Sezione 24 punto 1) con quelle aggiunte manualmente (punto 2), senza
@@ -42,7 +43,14 @@ const list = asyncHandler(async (req, res) => {
       suggestedQuantity: i.quantityToBuy || 1
     }));
 
-  res.json({ items: [...manual, ...autoItems] });
+  const items = await Promise.all(
+    [...manual, ...autoItems].map(async (item) => ({
+      ...item,
+      product: await withImageUrl(item.product)
+    }))
+  );
+
+  res.json({ items });
 });
 
 // POST /api/shopping-list — aggiunge (o aggiorna la quantità di) una voce
@@ -70,7 +78,7 @@ const addManual = asyncHandler(async (req, res) => {
     item: {
       type: 'manual',
       id: item._id,
-      product: item.productId,
+      product: await withImageUrl(item.productId),
       suggestedQuantity: item.quantityToBuy || 1
     }
   });
@@ -118,6 +126,10 @@ const purchase = asyncHandler(async (req, res) => {
   // automatiche si risolvono da sole al prossimo GET (quantità aggiornata).
   if (outcome.status === 200 && itemId) {
     await ShoppingListItem.deleteOne({ _id: itemId, workspaceId: req.workspaceId });
+  }
+
+  if (outcome.body.product) {
+    outcome.body.product = await withImageUrl(outcome.body.product);
   }
 
   res.status(outcome.status).json(outcome.body);

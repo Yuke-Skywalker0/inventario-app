@@ -57,13 +57,13 @@ Le foto vengono compresse **nel browser** prima dell'invio (ridimensionate a un 
 caricate attraverso il backend (non con URL pre-firmate dirette): questo permette una vera
 validazione server-side del tipo di file, invece di fidarsi solo del client (Sezione 34).
 
-**Nota importante sulla visibilità:** Backblaze B2, a differenza di Amazon S3, non supporta
-ACL per singolo file — la visibilità (pubblica o privata) è decisa a livello dell'intero
-bucket. Per questo il bucket immagini deve essere impostato su **Public** nella dashboard
-Backblaze. Le chiavi dei file sono comunque UUID casuali non enumerabili, quindi nessuno può
-scoprire un'immagine senza già conoscerne l'URL esatto. Se in futuro servisse un controllo
-di accesso più stretto (es. inventario con foto sensibili), la soluzione sarebbe passare a
-URL pre-firmate con scadenza — cambio contenuto nel solo backend, senza toccare il frontend.
+**Bucket privato, URL firmate a scadenza.** Backblaze B2 richiede una carta di credito per
+abilitare bucket pubblici (anche se l'addebito iniziale è minimo e accreditato sul saldo) —
+esattamente lo stesso problema per cui avevamo scartato Cloudflare R2. Per restare a 0€ senza
+carta, il bucket resta **privato** e il backend genera un **URL firmato** (valido 6 ore) ogni
+volta che un prodotto con foto viene restituito da un endpoint (`services/imageUrlService.js`,
+usato da tutti i controller che rispondono con dati prodotto). Questo ha anche un vantaggio
+di sicurezza in più: le foto non sono permanentemente accessibili a chiunque abbia il link.
 
 Sostituendo una foto, quella precedente viene eliminata da B2 per non accumulare file orfani
 sui 10GB gratuiti.

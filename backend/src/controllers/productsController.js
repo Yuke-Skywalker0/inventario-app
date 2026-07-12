@@ -7,6 +7,7 @@ const { validateProductInput } = require('../utils/validateProductInput');
 const { validateAdjustInput } = require('../utils/validateAdjustInput');
 const { validateTransferInput } = require('../utils/validateTransferInput');
 const { applyAdjustment } = require('../services/inventoryService');
+const { withImageUrl, withImageUrls } = require('../services/imageUrlService');
 
 const MAX_PAGE_SIZE = 200;
 const DEFAULT_PAGE_SIZE = 50;
@@ -34,7 +35,7 @@ const list = asyncHandler(async (req, res) => {
     .skip(skip)
     .limit(limit);
 
-  res.json({ products });
+  res.json({ products: await withImageUrls(products) });
 });
 
 function escapeRegex(str) {
@@ -47,7 +48,7 @@ const getOne = asyncHandler(async (req, res) => {
   if (!product) {
     return res.status(404).json({ error: 'Prodotto non trovato' });
   }
-  res.json({ product });
+  res.json({ product: await withImageUrl(product) });
 });
 
 // POST /api/products
@@ -93,7 +94,7 @@ const create = asyncHandler(async (req, res) => {
     });
   }
 
-  res.status(201).json({ product });
+  res.status(201).json({ product: await withImageUrl(product) });
 });
 
 // PUT /api/products/:id — aggiorna solo i campi anagrafici, MAI la quantità
@@ -116,7 +117,7 @@ const update = asyncHandler(async (req, res) => {
   if (!product) {
     return res.status(404).json({ error: 'Prodotto non trovato' });
   }
-  res.json({ product });
+  res.json({ product: await withImageUrl(product) });
 });
 
 // PATCH /api/products/:id/toggle-archived
@@ -128,7 +129,7 @@ const toggleArchived = asyncHandler(async (req, res) => {
   product.archived = !product.archived;
   product.updatedBy = req.userId;
   await product.save();
-  res.json({ product });
+  res.json({ product: await withImageUrl(product) });
 });
 
 // Usata solo internamente per interrompere la transazione in modo pulito
@@ -156,6 +157,10 @@ const adjust = asyncHandler(async (req, res) => {
     userId: req.userId,
     clientOpId
   });
+
+  if (outcome.body.product) {
+    outcome.body.product = await withImageUrl(outcome.body.product);
+  }
 
   res.status(outcome.status).json(outcome.body);
 });
@@ -252,6 +257,9 @@ const transfer = asyncHandler(async (req, res) => {
   }
 
   await session.endSession();
+  if (outcome.body.product) {
+    outcome.body.product = await withImageUrl(outcome.body.product);
+  }
   res.status(outcome.status).json(outcome.body);
 });
 

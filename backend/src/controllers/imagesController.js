@@ -2,6 +2,7 @@ const { PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const crypto = require('crypto');
 const Product = require('../models/Product');
 const { createB2Client } = require('../config/b2');
+const { withImageUrl } = require('../services/imageUrlService');
 const { asyncHandler } = require('../middleware/errorHandler');
 
 const ALLOWED_MIME_TYPES = {
@@ -14,12 +15,9 @@ const ALLOWED_MIME_TYPES = {
 // Sezione 22 e 34: mai fidarsi del client. Il file passa dal backend
 // (non è un upload diretto via URL pre-firmata) proprio per poterne
 // validare qui il tipo reale prima di scriverlo su B2.
-// Backblaze B2 non supporta ACL per singolo file: la visibilità è decisa
-// a livello di BUCKET (privato o pubblico), non di singolo oggetto. Per
-// questo il bucket immagini va impostato su "Public" nella dashboard
-// Backblaze — vedi docs/ENV_VARS.md. Le chiavi restano comunque UUID
-// casuali non enumerabili: nessuno può indovinare l'URL di un'immagine
-// senza conoscerne già la chiave esatta.
+// Il bucket resta PRIVATO (Backblaze richiede una carta di credito per i
+// bucket pubblici — vedi ADL): la visualizzazione passa da un URL firmata
+// a scadenza, generata da imageUrlService.js prima di ogni risposta.
 const upload = asyncHandler(async (req, res) => {
   const b2 = createB2Client();
   if (!b2) {
@@ -66,7 +64,7 @@ const upload = asyncHandler(async (req, res) => {
     );
   }
 
-  res.status(201).json({ product });
+  res.status(201).json({ product: await withImageUrl(product) });
 });
 
 // DELETE /api/products/:id/images
@@ -87,7 +85,7 @@ const remove = asyncHandler(async (req, res) => {
   product.updatedBy = req.userId;
   await product.save();
 
-  res.json({ product });
+  res.json({ product: await withImageUrl(product) });
 });
 
 module.exports = { upload, remove };
