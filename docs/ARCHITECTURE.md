@@ -44,8 +44,11 @@ Vedi gli schemi Mongoose in `backend/src/models/`. Punti chiave:
 - Password: bcrypt (cost 12).
 - Access token JWT (15 minuti), inviato via header `Authorization: Bearer`, **mai salvato in
   localStorage** (vive solo in memoria nel frontend).
-- Refresh token JWT (30 giorni) in cookie **httpOnly, Secure, SameSite=None** (richiesto perché
-  frontend e backend sono su domini diversi).
+- Refresh token JWT in cookie **httpOnly, Secure, SameSite=None**. Durata legata alla scelta
+  "Ricordami" fatta al login: **90 giorni** (cookie persistente) se attiva, altrimenti cookie
+  di sessione (nessun `maxAge` — sparisce alla chiusura del browser/app) con token JWT di 1
+  giorno come rete di sicurezza aggiuntiva. La preferenza viene mantenuta anche quando il
+  token si rinnova (rotazione), leggendola dalla sessione precedente.
 - Ogni refresh token è tracciato in `RefreshSession` (solo l'hash, mai in chiaro) → abilita revoca
   singola, logout globale, e in futuro una lista dispositivi senza refactor.
 - Rotazione: ogni refresh invalida il token precedente ed emette una nuova coppia.

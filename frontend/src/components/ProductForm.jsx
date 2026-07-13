@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { listLocations } from '../api/locations';
 import { compressImage } from '../utils/compressImage';
 import { uploadProductImage } from '../api/images';
 import './ProductForm.css';
+
+const BarcodeScanner = lazy(() => import('./BarcodeScanner'));
 
 // onSubmit(payload) deve ritornare il prodotto creato/aggiornato.
 // onComplete(product) viene chiamato alla fine di tutto il flusso,
@@ -30,6 +32,8 @@ export default function ProductForm({ initialValue, onSubmit, onComplete, submit
   const [size, setSize] = useState(initialValue?.size || '');
   const [minQuantity, setMinQuantity] = useState(initialValue?.minQuantity ?? '');
   const [notes, setNotes] = useState(initialValue?.notes || '');
+  const [barcode, setBarcode] = useState(initialValue?.barcode || '');
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -84,6 +88,7 @@ export default function ProductForm({ initialValue, onSubmit, onComplete, submit
         color,
         size,
         notes,
+        barcode,
         minQuantity: minQuantity === '' ? undefined : minQuantity
       };
       if (!isEdit) {
@@ -238,6 +243,20 @@ export default function ProductForm({ initialValue, onSubmit, onComplete, submit
             />
           </label>
           <label className="product-field">
+            <span>Barcode</span>
+            <div className="product-barcode-row">
+              <input
+                type="text"
+                value={barcode}
+                onChange={(e) => setBarcode(e.target.value)}
+                placeholder="Scansiona o inserisci a mano"
+              />
+              <button type="button" className="product-scan-button" onClick={() => setScannerOpen(true)}>
+                Scansiona
+              </button>
+            </div>
+          </label>
+          <label className="product-field">
             <span>Note</span>
             <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </label>
@@ -253,6 +272,18 @@ export default function ProductForm({ initialValue, onSubmit, onComplete, submit
       <button type="submit" className="product-submit" disabled={busy}>
         {busy ? busyLabel : submitLabel}
       </button>
+
+      {scannerOpen && (
+        <Suspense fallback={null}>
+          <BarcodeScanner
+            onDetected={(code) => {
+              setBarcode(code);
+              setScannerOpen(false);
+            }}
+            onClose={() => setScannerOpen(false)}
+          />
+        </Suspense>
+      )}
     </form>
   );
 }

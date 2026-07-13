@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const { requireAuth } = require('../middleware/auth');
 const { requireWorkspace } = require('../middleware/workspace');
-const { list, getOne, create, update, toggleArchived, adjust, transfer } = require('../controllers/productsController');
+const { list, listCategories, getOne, create, update, toggleArchived, adjust, transfer } = require('../controllers/productsController');
 const { upload: uploadImage, remove: removeImage } = require('../controllers/imagesController');
 
 const router = express.Router();
@@ -18,6 +18,7 @@ const upload = multer({
 router.use(requireAuth, requireWorkspace);
 
 router.get('/', list);
+router.get('/meta/categories', listCategories);
 router.post('/', create);
 router.get('/:id', getOne);
 router.put('/:id', update);

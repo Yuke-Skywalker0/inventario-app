@@ -1,12 +1,19 @@
 import { apiJson } from './client';
 
-export async function listProducts({ q = '', locationId = '' } = {}) {
+export async function listProducts({ q = '', locationId = '', category = '', status = '' } = {}) {
   const params = new URLSearchParams();
   if (q) params.set('q', q);
   if (locationId) params.set('locationId', locationId);
+  if (category) params.set('category', category);
+  if (status) params.set('status', status);
   const qs = params.toString() ? `?${params.toString()}` : '';
   const data = await apiJson(`/products${qs}`);
   return data.products;
+}
+
+export async function listCategories() {
+  const data = await apiJson('/products/meta/categories');
+  return data.categories;
 }
 
 export async function getProduct(id) {

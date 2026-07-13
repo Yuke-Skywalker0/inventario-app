@@ -8,39 +8,55 @@ const { validateAdjustInput } = require('../utils/validateAdjustInput');
 const { validateTransferInput } = require('../utils/validateTransferInput');
 const { applyAdjustment } = require('../services/inventoryService');
 const { withImageUrl, withImageUrls } = require('../services/imageUrlService');
+const { buildProductSearchFilter, matchesStatus } = require('../utils/productSearch');
 
 const MAX_PAGE_SIZE = 200;
 const DEFAULT_PAGE_SIZE = 50;
+// Quando è attivo un filtro di stato (scorta bassa/esaurito), che si
+// applica dopo il fetch, prendiamo un lotto più ampio prima di
+// paginare, altrimenti rischieremmo di paginare "nel vuoto" scartando
+// risultati validi già oltre il limit. Compromesso ragionevole per la
+// scala di questo progetto (Sezione 39: fino a 10.000 prodotti).
+const STATUS_FILTER_FETCH_SIZE = 500;
 
-// GET /api/products?q=&locationId=&includeArchived=&limit=&skip=
+// GET /api/products?q=&locationId=&category=&status=&includeArchived=&limit=&skip=
 const list = asyncHandler(async (req, res) => {
-  const filter = { workspaceId: req.workspaceId };
-
-  if (req.query.includeArchived !== 'true') {
-    filter.archived = false;
-  }
-  if (req.query.locationId) {
-    filter['inventory.locationId'] = req.query.locationId;
-  }
-  if (req.query.q && req.query.q.trim()) {
-    const q = req.query.q.trim();
-    filter.title = { $regex: escapeRegex(q), $options: 'i' };
-  }
+  const filter = buildProductSearchFilter({
+    workspaceId: req.workspaceId,
+    q: req.query.q,
+    locationId: req.query.locationId,
+    category: req.query.category,
+    includeArchived: req.query.includeArchived
+  });
 
   const limit = Math.min(Number(req.query.limit) || DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
   const skip = Number(req.query.skip) || 0;
+  const status = req.query.status; // 'low' | 'out' | undefined
 
-  const products = await Product.find(filter)
-    .sort({ updatedAt: -1 })
-    .skip(skip)
-    .limit(limit);
+  let products;
+  if (status) {
+    const batch = await Product.find(filter)
+      .sort({ updatedAt: -1 })
+      .limit(STATUS_FILTER_FETCH_SIZE);
+    products = batch.filter((p) => matchesStatus(p, status)).slice(skip, skip + limit);
+  } else {
+    products = await Product.find(filter).sort({ updatedAt: -1 }).skip(skip).limit(limit);
+  }
 
   res.json({ products: await withImageUrls(products) });
 });
 
-function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
+// GET /api/products/meta/categories — elenco categorie già usate nel
+// workspace, per popolare il filtro (Sezione 19) senza dover digitare
+// a memoria una categoria esistente.
+const listCategories = asyncHandler(async (req, res) => {
+  const categories = await Product.distinct('category', {
+    workspaceId: req.workspaceId,
+    archived: false,
+    category: { $ne: '' }
+  });
+  res.json({ categories: categories.sort() });
+});
 
 // GET /api/products/:id
 const getOne = asyncHandler(async (req, res) => {
@@ -263,4 +279,4 @@ const transfer = asyncHandler(async (req, res) => {
   res.status(outcome.status).json(outcome.body);
 });
 
-module.exports = { list, getOne, create, update, toggleArchived, adjust, transfer };
+module.exports = { list, listCategories, getOne, create, update, toggleArchived, adjust, transfer };

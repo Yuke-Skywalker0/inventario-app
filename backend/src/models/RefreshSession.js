@@ -19,6 +19,10 @@ const refreshSessionSchema = new mongoose.Schema(
     },
     userAgent: { type: String, default: '' },
     revoked: { type: Boolean, default: false },
+    // Ricorda la scelta fatta al login, così quando il token viene
+    // rinnovato (rotazione) manteniamo la stessa durata invece di
+    // resettarla a un valore di default.
+    rememberMe: { type: Boolean, default: true },
     expiresAt: {
       type: Date,
       required: true
