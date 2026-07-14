@@ -21,3 +21,12 @@
   background: var(--color-accent);
   flex-shrink: 0;
 }
+
+.offline-dot.is-syncing {
+  animation: sync-pulse 1s ease-in-out infinite;
+}
+
+@keyframes sync-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}

@@ -125,7 +125,8 @@ export default function ProductForm({ initialValue, onSubmit, onComplete, submit
   }
 
   return (
-    <form onSubmit={handleSubmit} className="product-form">
+    <>
+      <form onSubmit={handleSubmit} className="product-form">
       {!isEdit && (
         <div className="product-photo-picker">
           <button
@@ -272,6 +273,7 @@ export default function ProductForm({ initialValue, onSubmit, onComplete, submit
       <button type="submit" className="product-submit" disabled={busy}>
         {busy ? busyLabel : submitLabel}
       </button>
+      </form>
 
       {scannerOpen && (
         <Suspense fallback={null}>
@@ -284,7 +286,7 @@ export default function ProductForm({ initialValue, onSubmit, onComplete, submit
           />
         </Suspense>
       )}
-    </form>
+    </>
   );
 }
 

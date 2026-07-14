@@ -1,14 +1,17 @@
-import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { useOfflineSync } from '../offline/useOfflineSync';
 import './OfflineBadge.css';
 
 export default function OfflineBadge() {
-  const online = useOnlineStatus();
-  if (online) return null;
+  const { online, pending, syncing } = useOfflineSync();
+
+  if (online && pending === 0) return null;
 
   return (
     <div className="offline-badge" role="status">
-      <span className="offline-dot" aria-hidden="true" />
-      Sei offline — le modifiche si sincronizzano al ritorno della connessione
+      <span className={`offline-dot${syncing ? ' is-syncing' : ''}`} aria-hidden="true" />
+      {!online && 'Sei offline — le modifiche si sincronizzano al ritorno della connessione'}
+      {online && syncing && 'Sincronizzazione in corso…'}
+      {online && !syncing && pending > 0 && `${pending} modifiche in attesa di sincronizzazione`}
     </div>
   );
 }

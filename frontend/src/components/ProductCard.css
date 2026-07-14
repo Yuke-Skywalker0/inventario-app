@@ -54,6 +54,16 @@
   white-space: nowrap;
 }
 
+.product-card-pending {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
 .product-card-meta {
   font-size: var(--text-xs);
   color: var(--color-ink-muted);

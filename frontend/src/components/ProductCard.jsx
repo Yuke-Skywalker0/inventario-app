@@ -27,7 +27,10 @@ export default function ProductCard({ product, locationsById, onQuickAdjust }) {
         </div>
 
         <div className="product-card-text">
-          <span className="product-card-title">{product.title}</span>
+          <span className="product-card-title">
+            {product.title}
+            {product._pendingSync && <span className="product-card-pending" title="In attesa di sincronizzazione" />}
+          </span>
           <span className="product-card-meta">
             {product.category && <span>{product.category}</span>}
             {product.category && locationLabel && <span className="dot">·</span>}

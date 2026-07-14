@@ -1,9 +1,17 @@
 import { apiJson } from './client';
+import { cacheLocations, getCachedLocations } from '../offline/db';
 
 export async function listLocations({ includeInactive = false } = {}) {
   const qs = includeInactive ? '?includeInactive=true' : '';
-  const data = await apiJson(`/locations${qs}`);
-  return data.locations;
+  try {
+    const data = await apiJson(`/locations${qs}`);
+    cacheLocations(data.locations).catch(() => {});
+    return data.locations;
+  } catch (err) {
+    if (err.status) throw err;
+    const cached = await getCachedLocations();
+    return includeInactive ? cached : cached.filter((l) => l.active);
+  }
 }
 
 export async function createLocation(payload) {

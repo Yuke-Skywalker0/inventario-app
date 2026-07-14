@@ -24,16 +24,19 @@ function Gate() {
   }
 
   return (
-    <Routes>
-      <Route element={<AppShell />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/prodotti/:id" element={<ProductDetail />} />
-        <Route path="/ubicazioni" element={<Locations />} />
-        <Route path="/da-comprare" element={<ShoppingList />} />
-        <Route path="/profilo" element={<Profile />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Route>
-    </Routes>
+    <>
+      <OfflineBadge />
+      <Routes>
+        <Route element={<AppShell />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/prodotti/:id" element={<ProductDetail />} />
+          <Route path="/ubicazioni" element={<Locations />} />
+          <Route path="/da-comprare" element={<ShoppingList />} />
+          <Route path="/profilo" element={<Profile />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </>
   );
 }
 
@@ -42,7 +45,6 @@ export default function App() {
     <ErrorBoundary>
       <BrowserRouter>
         <AuthProvider>
-          <OfflineBadge />
           <Gate />
         </AuthProvider>
       </BrowserRouter>
