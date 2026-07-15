@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getProduct, updateProduct, toggleProductArchived, adjustQuantity, transferProduct } from '../api/products';
+import { getProduct, updateProduct, toggleProductArchived } from '../api/products';
+import { offlineAwareAdjust, offlineAwareTransfer } from '../offline/offlineActions';
 import { listLocations } from '../api/locations';
 import QuantityStepper from '../components/QuantityStepper';
 import BottomSheet from '../components/BottomSheet';
@@ -37,7 +38,7 @@ export default function ProductDetail() {
   async function handleAdjust(locationId, delta) {
     setAdjustingLocationId(locationId);
     try {
-      const updated = await adjustQuantity(id, { locationId, delta });
+      const updated = await offlineAwareAdjust(product, { locationId, delta });
       setProduct(updated);
     } catch (err) {
       alert(err.message || 'Impossibile aggiornare la quantità');
@@ -56,7 +57,7 @@ export default function ProductDetail() {
   }
 
   async function handleTransfer(values) {
-    const updated = await transferProduct(id, values);
+    const updated = await offlineAwareTransfer(product, values);
     setProduct(updated);
     setTransferOpen(false);
   }

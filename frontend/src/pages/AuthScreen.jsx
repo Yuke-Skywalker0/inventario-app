@@ -8,6 +8,7 @@ export default function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -17,9 +18,9 @@ export default function AuthScreen() {
     setBusy(true);
     try {
       if (mode === 'login') {
-        await login({ email, password });
+        await login({ email, password, rememberMe });
       } else {
-        await register({ email, password, name });
+        await register({ email, password, name, rememberMe });
       }
     } catch (err) {
       setError(err.message || 'Qualcosa è andato storto, riprova.');
@@ -70,6 +71,15 @@ export default function AuthScreen() {
               minLength={8}
               required
             />
+          </label>
+
+          <label className="auth-remember">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+            />
+            <span>Ricordami su questo dispositivo</span>
           </label>
 
           {error && <p className="auth-error" role="alert">{error}</p>}
