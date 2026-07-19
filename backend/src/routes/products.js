@@ -4,6 +4,7 @@ const { requireAuth } = require('../middleware/auth');
 const { requireWorkspace } = require('../middleware/workspace');
 const { list, listCategories, getOne, create, update, toggleArchived, adjust, transfer } = require('../controllers/productsController');
 const { upload: uploadImage, remove: removeImage } = require('../controllers/imagesController');
+const { listForProduct } = require('../controllers/movementsController');
 
 const router = express.Router();
 
@@ -27,5 +28,6 @@ router.post('/:id/adjust', adjust);
 router.post('/:id/transfer', transfer);
 router.post('/:id/images', upload.single('image'), uploadImage);
 router.delete('/:id/images', removeImage);
+router.get('/:id/movements', listForProduct);
 
 module.exports = router;
