@@ -54,6 +54,11 @@ export async function getCachedProduct(id) {
   return db.get('products', id);
 }
 
+export async function deleteCachedProduct(id) {
+  const db = await getDB();
+  await db.delete('products', id);
+}
+
 // --- Cache ubicazioni ---
 
 export async function cacheLocations(locations) {
@@ -83,6 +88,24 @@ export async function listQueue() {
 export async function removeFromQueue(clientOpId) {
   const db = await getDB();
   await db.delete('queue', clientOpId);
+}
+
+// Quando un prodotto creato offline (id temporaneo) viene finalmente
+// sincronizzato, il server assegna un id reale. Se nel frattempo erano
+// state messe in coda anche modifiche di quantità/trasferimenti su
+// quello stesso prodotto (identificato dall'id temporaneo), vanno
+// aggiornate per puntare al nuovo id reale prima di essere eseguite,
+// altrimenti fallirebbero con "prodotto non trovato".
+export async function remapQueueProductId(oldId, newId) {
+  const db = await getDB();
+  const tx = db.transaction('queue', 'readwrite');
+  const all = await tx.store.getAll();
+  await Promise.all(
+    all
+      .filter((op) => op.productId === oldId)
+      .map((op) => tx.store.put({ ...op, productId: newId }))
+  );
+  await tx.done;
 }
 
 export async function queueCount() {

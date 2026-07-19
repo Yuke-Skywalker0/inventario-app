@@ -103,16 +103,22 @@ export default function ProductForm({ initialValue, onSubmit, onComplete, submit
       // un prodotto senza foto che nessun prodotto (Sezione 54: modifica
       // minima, non far fallire tutto per un problema secondario).
       if (photoFile) {
-        setBusyLabel('Carico la foto…');
-        try {
-          const compressed = await compressImage(photoFile);
-          product = await uploadProductImage(product._id, compressed);
-        } catch (photoErr) {
+        if (product._tempId) {
           setError(
-            'Prodotto creato, ma la foto non è stata caricata (' +
-              (photoErr.message || 'errore sconosciuto') +
-              '). Puoi riprovare dalla scheda prodotto.'
+            'Prodotto salvato (verrà creato quando torna la connessione). La foto non può essere caricata finché sei offline: aggiungila dopo dalla scheda prodotto.'
           );
+        } else {
+          setBusyLabel('Carico la foto…');
+          try {
+            const compressed = await compressImage(photoFile);
+            product = await uploadProductImage(product._id, compressed);
+          } catch (photoErr) {
+            setError(
+              'Prodotto creato, ma la foto non è stata caricata (' +
+                (photoErr.message || 'errore sconosciuto') +
+                '). Puoi riprovare dalla scheda prodotto.'
+            );
+          }
         }
       }
 

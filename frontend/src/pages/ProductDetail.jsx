@@ -8,6 +8,7 @@ import BottomSheet from '../components/BottomSheet';
 import ProductForm from '../components/ProductForm';
 import TransferForm from '../components/TransferForm';
 import ProductImage from '../components/ProductImage';
+import MovementHistory from '../components/MovementHistory';
 import './ProductDetail.css';
 
 export default function ProductDetail() {
@@ -166,6 +167,8 @@ export default function ProductDetail() {
           </dl>
         </section>
       )}
+
+      <MovementHistory productId={product._id} locationsById={locationsById} unit={product.unit} />
 
       <div className="product-detail-actions">
         <button type="button" className="product-detail-edit" onClick={() => setEditOpen(true)}>

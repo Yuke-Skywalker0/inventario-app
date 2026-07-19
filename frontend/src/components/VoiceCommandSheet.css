@@ -1,0 +1,82 @@
+.voice-command {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.voice-command-hint {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+  padding: var(--space-4) 0;
+}
+
+.voice-command-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.voice-command-list button {
+  height: var(--touch-target);
+  padding: 0 var(--space-4);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  text-align: left;
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--color-ink);
+}
+
+.voice-command-list button:active {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+}
+
+.voice-command-confirm-text {
+  text-align: center;
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--color-ink);
+  padding: var(--space-2) 0;
+}
+
+.voice-command-confirm-text strong {
+  font-weight: var(--font-display-weight);
+}
+
+.voice-command-confirm-buttons {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.voice-command-cancel {
+  flex: 1;
+  height: var(--touch-target);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-ink-muted);
+  font-weight: 700;
+}
+
+.voice-command-confirm {
+  flex: 2;
+  height: var(--touch-target);
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  border-radius: var(--radius-md);
+  font-weight: 700;
+}
+
+.voice-command-confirm:disabled,
+.voice-command-cancel:disabled {
+  opacity: 0.6;
+}
+
+.voice-command-error {
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: center;
+  padding: var(--space-3) 0;
+}

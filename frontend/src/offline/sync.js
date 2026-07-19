@@ -1,4 +1,4 @@
-import { listQueue, removeFromQueue, cacheProduct } from './db';
+import { listQueue, removeFromQueue, cacheProduct, deleteCachedProduct, remapQueueProductId } from './db';
 import { apiJson } from '../api/client';
 
 // Esegue una singola operazione in coda contro il vero backend. Riusa
@@ -13,6 +13,11 @@ async function runOperation(op) {
       });
     case 'transfer':
       return apiJson(`/products/${op.productId}/transfer`, {
+        method: 'POST',
+        body: JSON.stringify(op.body)
+      });
+    case 'createProduct':
+      return apiJson('/products', {
         method: 'POST',
         body: JSON.stringify(op.body)
       });
@@ -40,9 +45,20 @@ export async function syncQueue(onChange) {
     for (const op of ops) {
       try {
         const data = await runOperation(op);
-        if (data.product) {
+
+        if (op.type === 'createProduct') {
+          // L'id temporaneo non esiste più: il prodotto vero ha un id
+          // diverso, assegnato dal server. Sostituiamo in cache e
+          // aggiorniamo eventuali operazioni successive già in coda che
+          // puntavano ancora al vecchio id temporaneo (es. una modifica
+          // di quantità fatta subito dopo, sempre offline).
+          await deleteCachedProduct(op.productId);
+          await cacheProduct(data.product);
+          await remapQueueProductId(op.productId, data.product._id);
+        } else if (data.product) {
           await cacheProduct(data.product);
         }
+
         await removeFromQueue(op.clientOpId);
         onChange?.();
       } catch (err) {

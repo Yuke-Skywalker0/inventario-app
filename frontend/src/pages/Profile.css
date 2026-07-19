@@ -43,3 +43,43 @@
   border-radius: var(--radius-md);
   font-weight: 700;
 }
+
+.profile-export {
+  margin-top: var(--space-6);
+}
+
+.profile-export h2 {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-muted);
+}
+
+.profile-export-hint {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.profile-export-button {
+  width: 100%;
+  height: var(--touch-target);
+  margin-top: var(--space-3);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-ink);
+  font-weight: 700;
+  font-size: var(--text-sm);
+}
+
+.profile-export-button:disabled {
+  opacity: 0.6;
+}
+
+.profile-export-error {
+  margin-top: var(--space-3);
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}

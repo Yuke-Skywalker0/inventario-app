@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState, useCallback, lazy, Suspense } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { listProducts, createProduct } from '../api/products';
-import { offlineAwareAdjust } from '../offline/offlineActions';
+import { listProducts } from '../api/products';
+import { offlineAwareAdjust, offlineAwareCreateProduct } from '../offline/offlineActions';
 import { listLocations } from '../api/locations';
 import BottomSheet from '../components/BottomSheet';
 import ProductForm from '../components/ProductForm';
 import ProductCard from '../components/ProductCard';
 import FiltersForm from '../components/FiltersForm';
+import VoiceCommandSheet from '../components/VoiceCommandSheet';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { parseVoiceCommand } from '../utils/parseVoiceCommand';
 import './Home.css';
 
 // Caricato solo quando serve davvero (l'utente tocca "scansiona"): la
@@ -32,6 +34,7 @@ export default function Home() {
   const [error, setError] = useState('');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [voiceCommand, setVoiceCommand] = useState(null);
   const inputRef = useRef(null);
   const debounceRef = useRef(null);
 
@@ -71,7 +74,7 @@ export default function Home() {
   }, []);
 
   async function handleCreate(payload) {
-    return createProduct(payload);
+    return offlineAwareCreateProduct(payload);
   }
 
   function handleBarcodeDetected(code) {
@@ -80,7 +83,16 @@ export default function Home() {
   }
 
   const handleVoiceResult = useCallback((transcript) => {
-    setQuery(transcript);
+    const command = parseVoiceCommand(transcript);
+    if (command.action === 'search') {
+      setQuery(command.query);
+    } else if (command.action === 'filter-low') {
+      setQuery('');
+      setStatus('low');
+    } else {
+      // 'remove' o 'add': mai eseguito subito, sempre conferma (Sezione 20)
+      setVoiceCommand(command);
+    }
   }, []);
 
   const speech = useSpeechRecognition({ onResult: handleVoiceResult });
@@ -212,6 +224,22 @@ export default function Home() {
         <Suspense fallback={null}>
           <BarcodeScanner onDetected={handleBarcodeDetected} onClose={() => setScannerOpen(false)} />
         </Suspense>
+      )}
+
+      {voiceCommand && (
+        <VoiceCommandSheet
+          command={voiceCommand}
+          locationsById={locationsById}
+          onClose={() => setVoiceCommand(null)}
+          onApplied={(updated) => {
+            setProducts((prev) => {
+              if (!prev) return prev;
+              const exists = prev.some((p) => p._id === updated._id);
+              return exists ? prev.map((p) => (p._id === updated._id ? updated : p)) : [updated, ...prev];
+            });
+            setTimeout(() => setVoiceCommand(null), 900);
+          }}
+        />
       )}
     </div>
   );

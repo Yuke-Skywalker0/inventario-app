@@ -1,10 +1,18 @@
-import { adjustQuantity as apiAdjust, transferProduct as apiTransfer } from '../api/products';
+import {
+  adjustQuantity as apiAdjust,
+  transferProduct as apiTransfer,
+  createProduct as apiCreateProduct
+} from '../api/products';
 import { enqueueOperation, cacheProduct } from './db';
 
 function makeClientOpId() {
   return typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function isTempProduct(product) {
+  return typeof product._id === 'string' && product._id.startsWith('temp-');
 }
 
 function applyDelta(product, locationId, delta) {
@@ -34,7 +42,10 @@ function applyDelta(product, locationId, delta) {
 // se la richiesta fosse comunque arrivata al server prima di cadere
 // offline, il retry non duplica l'effetto (idempotenza server-side).
 export async function offlineAwareAdjust(product, { locationId, delta, type, reason, note }) {
-  if (navigator.onLine) {
+  // Un prodotto creato offline e non ancora sincronizzato non esiste
+  // ancora sul server, indipendentemente dal fatto che la rete sia
+  // tornata: va sempre in coda, mai chiamato online direttamente.
+  if (navigator.onLine && !isTempProduct(product)) {
     try {
       const updated = await apiAdjust(product._id, { locationId, delta, type, reason, note });
       await cacheProduct(updated);
@@ -63,7 +74,7 @@ export async function offlineAwareAdjust(product, { locationId, delta, type, rea
 // Trasferimento (Sezione 8/15): stessa logica, ma tocca due ubicazioni
 // in un'unica operazione locale prima di mettere in coda.
 export async function offlineAwareTransfer(product, { fromLocationId, toLocationId, quantity, note }) {
-  if (navigator.onLine) {
+  if (navigator.onLine && !isTempProduct(product)) {
     try {
       const updated = await apiTransfer(product._id, { fromLocationId, toLocationId, quantity, note });
       await cacheProduct(updated);
@@ -87,4 +98,62 @@ export async function offlineAwareTransfer(product, { fromLocationId, toLocation
   });
 
   return updatedProduct;
+}
+
+// Creazione prodotto (Sezione 25: "aggiungere prodotti, se possibile").
+// Online: passa dal server come sempre. Offline: crea un prodotto
+// "temporaneo" (id locale, mai esistito sul server) visibile subito
+// nell'app, e mette in coda la vera creazione. Quando la sincronizzazione
+// riesce, l'id temporaneo viene sostituito con quello reale ovunque
+// serva (vedi remapQueueProductId in db.js e sync.js).
+export async function offlineAwareCreateProduct(payload) {
+  if (navigator.onLine) {
+    try {
+      return await apiCreateProduct(payload);
+    } catch (err) {
+      if (err.status) throw err;
+      // altrimenti: rete assente nonostante navigator.onLine, procedi offline sotto
+    }
+  }
+
+  const clientOpId = makeClientOpId();
+  const tempId = `temp-${clientOpId}`;
+  const now = new Date().toISOString();
+  const quantity = payload.quantity ? Number(payload.quantity) : 0;
+  const inventory = payload.locationId && quantity > 0 ? [{ locationId: payload.locationId, quantity }] : [];
+
+  const tempProduct = {
+    _id: tempId,
+    title: payload.title,
+    unit: payload.unit || 'pezzi',
+    inventory,
+    category: payload.category || '',
+    brand: payload.brand || '',
+    color: payload.color || '',
+    size: payload.size || '',
+    notes: payload.notes || '',
+    barcode: payload.barcode || '',
+    minQuantity: payload.minQuantity ?? null,
+    mainImage: '',
+    mainImageUrl: null,
+    archived: false,
+    createdAt: now,
+    updatedAt: now,
+    // _pendingSync guida il badge "in attesa" già usato per adjust/transfer;
+    // _tempId serve alla UI per sapere che non può ancora, ad esempio,
+    // caricare una foto (serve un id reale).
+    _pendingSync: true,
+    _tempId: true
+  };
+
+  await cacheProduct(tempProduct);
+  await enqueueOperation({
+    clientOpId,
+    type: 'createProduct',
+    productId: tempId,
+    body: payload,
+    createdAt: Date.now()
+  });
+
+  return tempProduct;
 }
