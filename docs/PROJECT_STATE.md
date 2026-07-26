@@ -1,11 +1,14 @@
 # Project State
 
-_Ultimo aggiornamento: tutte e tre le voci rimaste completate (import/backup, modifica
-offline di prodotti non sincronizzati, suite di test end-to-end)._
+_Ultimo aggiornamento: fix deploy Cloudflare (package-lock.json fuori sincrono per Playwright)._
 
 ## Fase corrente
-Progetto completo rispetto al brief originale, comprese tutte le rifiniture richieste nel
-tempo. 90/90 test backend, build frontend pulita (341 moduli, ~822KB precache totale).
+Bug di deploy risolto: avevo aggiunto `@playwright/test` a `package.json` senza rigenerare
+`package-lock.json`, e Cloudflare usa `npm ci` (che pretende i due file sincronizzati) — il
+build falliva prima ancora di iniziare. Rimosso `@playwright/test` dal `package.json` del
+progetto (i test e2e restano nel repository, ma Playwright va installato a parte quando
+serve — vedi `docs/E2E_TESTING.md`). Verificato con `npm ci` reale che ora funziona. 90/90
+test backend, build frontend pulita.
 
 ## Nota importante: la sandbox di sviluppo si è resettata durante questa sessione
 A un certo punto tutti i file sono spariti dall'ambiente di sviluppo (evento simile a un
@@ -75,7 +78,10 @@ progetto.
 Nessuno. Test automatici backend: 90/90 passati.
 
 ## Bug risolti
+- **[Deploy] `npm ci` fallito per `package-lock.json` fuori sincrono**: aggiunta manuale di
+  `@playwright/test` a `package.json` senza rigenerare il lock file. Risolto rimuovendo la
+  dipendenza dal progetto (i test restano, Playwright si installa a parte quando serve).
 Vedi le versioni precedenti di questo file (recuperabili dalla cronologia Git) per l'elenco
-completo: schermo nero, deploy Cloudflare, variabili JWT, Backblaze ACL/bucket pubblico,
-endpoint B2, trust proxy, form annidato scanner, cartella offline mancante dal deploy,
-creazione offline.
+completo dei bug precedenti: schermo nero, deploy Cloudflare (root directory/wrangler.jsonc),
+variabili JWT, Backblaze ACL/bucket pubblico, endpoint B2, trust proxy, form annidato scanner,
+cartella offline mancante dal deploy, creazione offline.

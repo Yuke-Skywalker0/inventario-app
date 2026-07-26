@@ -1,5 +1,11 @@
 # Test end-to-end (Playwright)
 
+> **Nota**: `@playwright/test` non è elencato nel `package.json` del progetto di proposito.
+> Includerlo ha causato un fallimento del deploy su Cloudflare (`npm ci` pretende che
+> `package.json` e `package-lock.json` siano perfettamente sincronizzati, e il lock file va
+> rigenerato ogni volta che si aggiunge una dipendenza — un dettaglio facile da dimenticare).
+> Per usare i test, installalo come pacchetto separato (istruzioni sotto).
+
 ## Perché esistono ma non sono stati eseguiti da Claude
 
 La sandbox di sviluppo usata per costruire questo progetto blocca l'accesso al dominio da cui
@@ -18,11 +24,13 @@ garanzia assoluta — è possibile che il primo tentativo richieda qualche picco
 
 ## Come eseguirli in locale
 
-1. Installa le dipendenze e il browser (questo passaggio richiede una rete senza le
-   restrizioni della sandbox — sul tuo computer funzionerà normalmente):
+1. Installa Playwright (**non è incluso in `package.json`** apposta: se lo fosse, `npm ci`
+   fallirebbe sul deploy Cloudflare per un lock file fuori sincrono — è già successo una volta.
+   Installalo quindi come pacchetto a sé quando vuoi usare i test):
    ```bash
    cd frontend
    npm install
+   npm install --save-dev @playwright/test
    npx playwright install chromium
    ```
 
