@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getProduct, updateProduct, toggleProductArchived } from '../api/products';
-import { offlineAwareAdjust, offlineAwareTransfer } from '../offline/offlineActions';
+import { getProduct } from '../api/products';
+import { offlineAwareAdjust, offlineAwareTransfer, offlineAwareUpdate, offlineAwareToggleArchived } from '../offline/offlineActions';
 import { listLocations } from '../api/locations';
+import { useAuth } from '../context/AuthContext';
 import QuantityStepper from '../components/QuantityStepper';
 import BottomSheet from '../components/BottomSheet';
 import ProductForm from '../components/ProductForm';
@@ -14,6 +15,8 @@ import './ProductDetail.css';
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { role } = useAuth();
+  const canWrite = role !== 'viewer';
   const [product, setProduct] = useState(null);
   const [locationsById, setLocationsById] = useState({});
   const [error, setError] = useState('');
@@ -49,7 +52,7 @@ export default function ProductDetail() {
   }
 
   async function handleEditSubmit(payload) {
-    return updateProduct(id, payload);
+    return offlineAwareUpdate(product, payload);
   }
 
   function handleEditComplete(updated) {
@@ -64,7 +67,7 @@ export default function ProductDetail() {
   }
 
   async function handleToggleArchived() {
-    const updated = await toggleProductArchived(id);
+    const updated = await offlineAwareToggleArchived(product);
     setProduct(updated);
   }
 
@@ -92,7 +95,7 @@ export default function ProductDetail() {
       </button>
 
       <div className="product-detail-header">
-        <ProductImage product={product} onChange={setProduct} />
+        <ProductImage product={product} onChange={setProduct} readOnly={!canWrite} />
         <h1>{product.title}</h1>
         {product.category && <p className="product-detail-category">{product.category}</p>}
         <p className="product-detail-total">
@@ -117,23 +120,31 @@ export default function ProductDetail() {
             return (
               <div key={entry.locationId} className="product-detail-location">
                 <p className="product-detail-location-name">{loc?.name || 'Ubicazione'}</p>
-                <QuantityStepper
-                  quantity={entry.quantity}
-                  unit={product.unit}
-                  busy={adjustingLocationId === entry.locationId}
-                  onAdjust={(delta) => handleAdjust(entry.locationId, delta)}
-                />
+                {canWrite ? (
+                  <QuantityStepper
+                    quantity={entry.quantity}
+                    unit={product.unit}
+                    busy={adjustingLocationId === entry.locationId}
+                    onAdjust={(delta) => handleAdjust(entry.locationId, delta)}
+                  />
+                ) : (
+                  <p className="product-detail-qty-readonly">
+                    {formatQty(entry.quantity)} {product.unit}
+                  </p>
+                )}
               </div>
             );
           })}
         </div>
 
-        <AddLocationPicker
-          locations={Object.values(locationsById).filter(
-            (l) => l.active && !product.inventory.some((i) => i.locationId === l._id)
-          )}
-          onAdd={(locationId) => handleAdjust(locationId, 1)}
-        />
+        {canWrite && (
+          <AddLocationPicker
+            locations={Object.values(locationsById).filter(
+              (l) => l.active && !product.inventory.some((i) => i.locationId === l._id)
+            )}
+            onAdd={(locationId) => handleAdjust(locationId, 1)}
+          />
+        )}
       </section>
 
       {(product.brand || product.color || product.size || product.notes) && (
@@ -170,27 +181,38 @@ export default function ProductDetail() {
 
       <MovementHistory productId={product._id} locationsById={locationsById} unit={product.unit} />
 
-      <div className="product-detail-actions">
-        <button type="button" className="product-detail-edit" onClick={() => setEditOpen(true)}>
-          Modifica
-        </button>
-        {totalQuantity > 0 && (
-          <button type="button" className="product-detail-transfer" onClick={() => setTransferOpen(true)}>
-            Trasferisci
+      {canWrite && (
+        <div className="product-detail-actions">
+          <button type="button" className="product-detail-edit" onClick={() => setEditOpen(true)}>
+            Modifica
           </button>
-        )}
-        <button type="button" className="product-detail-archive" onClick={handleToggleArchived}>
-          {product.archived ? 'Riattiva' : 'Archivia'}
-        </button>
-      </div>
+          {totalQuantity > 0 && (
+            <button type="button" className="product-detail-transfer" onClick={() => setTransferOpen(true)}>
+              Trasferisci
+            </button>
+          )}
+          <button type="button" className="product-detail-archive" onClick={handleToggleArchived}>
+            {product.archived ? 'Riattiva' : 'Archivia'}
+          </button>
+        </div>
+      )}
 
-      <BottomSheet open={transferOpen} onClose={() => setTransferOpen(false)} title="Trasferisci">
-        <TransferForm product={product} locationsById={locationsById} onSubmit={handleTransfer} />
-      </BottomSheet>
+      {canWrite && (
+        <>
+          <BottomSheet open={transferOpen} onClose={() => setTransferOpen(false)} title="Trasferisci">
+            <TransferForm product={product} locationsById={locationsById} onSubmit={handleTransfer} />
+          </BottomSheet>
 
-      <BottomSheet open={editOpen} onClose={() => setEditOpen(false)} title="Modifica prodotto">
-        <ProductForm initialValue={product} onSubmit={handleEditSubmit} onComplete={handleEditComplete} submitLabel="Salva modifiche" />
-      </BottomSheet>
+          <BottomSheet open={editOpen} onClose={() => setEditOpen(false)} title="Modifica prodotto">
+            <ProductForm
+              initialValue={product}
+              onSubmit={handleEditSubmit}
+              onComplete={handleEditComplete}
+              submitLabel="Salva modifiche"
+            />
+          </BottomSheet>
+        </>
+      )}
     </div>
   );
 }

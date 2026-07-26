@@ -21,6 +21,15 @@ async function runOperation(op) {
         method: 'POST',
         body: JSON.stringify(op.body)
       });
+    case 'updateProduct':
+      return apiJson(`/products/${op.productId}`, {
+        method: 'PUT',
+        body: JSON.stringify(op.body)
+      });
+    case 'toggleArchived':
+      return apiJson(`/products/${op.productId}/toggle-archived`, {
+        method: 'PATCH'
+      });
     default:
       throw new Error(`Tipo di operazione sconosciuto: ${op.type}`);
   }

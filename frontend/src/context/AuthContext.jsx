@@ -7,6 +7,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [workspace, setWorkspace] = useState(null);
+  const [role, setRole] = useState(null);
   // 'loading' finché non sappiamo ancora se esiste una sessione valida
   // (evita un lampo della schermata di login ad ogni apertura dell'app).
   const [status, setStatus] = useState('loading');
@@ -19,9 +20,6 @@ export function AuthProvider({ children }) {
       try {
         token = await refreshAccessToken();
       } catch {
-        // Rete irraggiungibile, CORS non configurato, backend addormentato
-        // e non ancora sveglio, ecc: in ogni caso non deve bloccare l'app
-        // sulla schermata di caricamento all'infinito. Si mostra il login.
         token = null;
       }
       if (cancelled) return;
@@ -36,6 +34,7 @@ export function AuthProvider({ children }) {
         if (cancelled) return;
         setUser(data.user);
         setWorkspace(data.workspace);
+        setRole(data.role);
         setStatus('signed-in');
       } catch {
         if (!cancelled) setStatus('signed-out');
@@ -52,6 +51,7 @@ export function AuthProvider({ children }) {
     const data = await apiLogin(credentials);
     setUser(data.user);
     setWorkspace(data.workspace);
+    setRole(data.role);
     setStatus('signed-in');
     return data;
   }, []);
@@ -60,6 +60,7 @@ export function AuthProvider({ children }) {
     const data = await apiRegister(details);
     setUser(data.user);
     setWorkspace(data.workspace);
+    setRole(data.role);
     setStatus('signed-in');
     return data;
   }, []);
@@ -71,12 +72,26 @@ export function AuthProvider({ children }) {
       setAccessToken(null);
       setUser(null);
       setWorkspace(null);
+      setRole(null);
       setStatus('signed-out');
     }
   }, []);
 
+  // Dopo aver accettato un invito o cambiato workspace attivo, i dati di
+  // /api/me sono cambiati: questa funzione li rilegge senza dover fare
+  // un logout/login completo.
+  const refreshWorkspace = useCallback(async () => {
+    const data = await fetchMe();
+    setUser(data.user);
+    setWorkspace(data.workspace);
+    setRole(data.role);
+    return data;
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, workspace, status, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, workspace, role, status, login, register, logout, refreshWorkspace }}
+    >
       {children}
     </AuthContext.Provider>
   );

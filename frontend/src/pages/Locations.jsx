@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
   listLocations,
   createLocation,
@@ -13,6 +14,8 @@ import './Locations.css';
 
 export default function Locations() {
   const { setFab } = useOutletContext();
+  const { role } = useAuth();
+  const canManage = role === 'owner' || role === 'admin';
   const [locations, setLocations] = useState(null); // null = ancora in caricamento
   const [error, setError] = useState('');
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -36,10 +39,12 @@ export default function Locations() {
   // Registra l'azione del FAB per questa pagina: apre il form di creazione.
   // Viene ripulita all'uscita dalla pagina (torna al comportamento di Home).
   useEffect(() => {
-    setFab({ label: 'Nuova ubicazione', onClick: () => openCreate() });
+    if (canManage) {
+      setFab({ label: 'Nuova ubicazione', onClick: () => openCreate() });
+    }
     return () => setFab(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [canManage]);
 
   function openCreate() {
     setEditing(null);
@@ -109,8 +114,9 @@ export default function Locations() {
             <LocationCard
               key={location._id}
               location={location}
-              onEdit={handleEdit}
-              onToggleActive={handleToggleActive}
+              onEdit={canManage ? handleEdit : () => {}}
+              onToggleActive={canManage ? handleToggleActive : () => {}}
+              readOnly={!canManage}
             />
           ))}
         </div>

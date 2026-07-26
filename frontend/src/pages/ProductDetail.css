@@ -93,6 +93,13 @@
   margin-bottom: var(--space-3);
 }
 
+.product-detail-qty-readonly {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-display-weight);
+  letter-spacing: var(--font-display-spacing);
+  color: var(--color-ink);
+}
+
 .add-location-picker {
   margin-top: var(--space-3);
 }

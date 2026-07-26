@@ -1,7 +1,9 @@
 import {
   adjustQuantity as apiAdjust,
   transferProduct as apiTransfer,
-  createProduct as apiCreateProduct
+  createProduct as apiCreateProduct,
+  updateProduct as apiUpdateProduct,
+  toggleProductArchived as apiToggleArchived
 } from '../api/products';
 import { enqueueOperation, cacheProduct } from './db';
 
@@ -156,4 +158,73 @@ export async function offlineAwareCreateProduct(payload) {
   });
 
   return tempProduct;
+}
+
+// Modifica dei dettagli anagrafici (Sezione 25, estensione al caso
+// "prodotto creato offline non ancora sincronizzato"): stessa logica di
+// adjust/transfer, ma qui non c'è un delta da calcolare — il payload
+// aggiornato si applica così com'è alla copia in cache.
+export async function offlineAwareUpdate(product, payload) {
+  if (navigator.onLine && !isTempProduct(product)) {
+    try {
+      const updated = await apiUpdateProduct(product._id, payload);
+      await cacheProduct(updated);
+      return updated;
+    } catch (err) {
+      if (err.status) throw err;
+    }
+  }
+
+  const clientOpId = makeClientOpId();
+  const updatedProduct = {
+    ...product,
+    title: payload.title,
+    unit: payload.unit,
+    category: payload.category || '',
+    brand: payload.brand || '',
+    color: payload.color || '',
+    size: payload.size || '',
+    notes: payload.notes || '',
+    barcode: payload.barcode ?? product.barcode,
+    minQuantity: payload.minQuantity === undefined ? product.minQuantity : payload.minQuantity,
+    _pendingSync: true
+  };
+
+  await cacheProduct(updatedProduct);
+  await enqueueOperation({
+    clientOpId,
+    type: 'updateProduct',
+    productId: product._id,
+    body: payload,
+    createdAt: Date.now()
+  });
+
+  return updatedProduct;
+}
+
+// Archiviazione/riattivazione, stessa logica.
+export async function offlineAwareToggleArchived(product) {
+  if (navigator.onLine && !isTempProduct(product)) {
+    try {
+      const updated = await apiToggleArchived(product._id);
+      await cacheProduct(updated);
+      return updated;
+    } catch (err) {
+      if (err.status) throw err;
+    }
+  }
+
+  const clientOpId = makeClientOpId();
+  const updatedProduct = { ...product, archived: !product.archived, _pendingSync: true };
+
+  await cacheProduct(updatedProduct);
+  await enqueueOperation({
+    clientOpId,
+    type: 'toggleArchived',
+    productId: product._id,
+    body: {},
+    createdAt: Date.now()
+  });
+
+  return updatedProduct;
 }

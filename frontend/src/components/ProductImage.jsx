@@ -3,7 +3,7 @@ import { compressImage } from '../utils/compressImage';
 import { uploadProductImage, deleteProductImage } from '../api/images';
 import './ProductImage.css';
 
-export default function ProductImage({ product, onChange }) {
+export default function ProductImage({ product, onChange, readOnly }) {
   const fileInputRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -46,38 +46,42 @@ export default function ProductImage({ product, onChange }) {
         {busy && <div className="product-image-busy">Attendi…</div>}
       </div>
 
-      <div className="product-image-actions">
-        <button
-          type="button"
-          className="product-image-button"
-          disabled={busy}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          {product.mainImageUrl ? 'Cambia foto' : 'Aggiungi foto'}
-        </button>
-        {product.mainImageUrl && (
+      {!readOnly && (
+        <div className="product-image-actions">
           <button
             type="button"
-            className="product-image-button product-image-remove"
+            className="product-image-button"
             disabled={busy}
-            onClick={handleDelete}
+            onClick={() => fileInputRef.current?.click()}
           >
-            Rimuovi
+            {product.mainImageUrl ? 'Cambia foto' : 'Aggiungi foto'}
           </button>
-        )}
-      </div>
+          {product.mainImageUrl && (
+            <button
+              type="button"
+              className="product-image-button product-image-remove"
+              disabled={busy}
+              onClick={handleDelete}
+            >
+              Rimuovi
+            </button>
+          )}
+        </div>
+      )}
 
       {/* capture="environment" apre direttamente la fotocamera posteriore
           su mobile, ma viene ignorato su desktop, dove si apre
           normalmente la selezione file: nessun fallback da gestire a mano. */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={handleFileSelected}
-        hidden
-      />
+      {!readOnly && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleFileSelected}
+          hidden
+        />
+      )}
 
       {error && (
         <p className="product-image-error" role="alert">

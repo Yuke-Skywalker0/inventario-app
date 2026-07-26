@@ -8,25 +8,37 @@ const TYPE_LABELS = {
   altro: 'Altro'
 };
 
-export default function LocationCard({ location, onEdit, onToggleActive }) {
+export default function LocationCard({ location, onEdit, onToggleActive, readOnly }) {
   return (
     <div className={`location-card${location.active ? '' : ' is-inactive'}`}>
-      <button type="button" className="location-card-main" onClick={() => onEdit(location)}>
-        <span className="location-card-type">{TYPE_LABELS[location.type] || 'Altro'}</span>
-        <span className="location-card-name">{location.name}</span>
-        {location.description && (
-          <span className="location-card-desc">{location.description}</span>
-        )}
-      </button>
+      {readOnly ? (
+        <div className="location-card-main">
+          <span className="location-card-type">{TYPE_LABELS[location.type] || 'Altro'}</span>
+          <span className="location-card-name">{location.name}</span>
+          {location.description && (
+            <span className="location-card-desc">{location.description}</span>
+          )}
+        </div>
+      ) : (
+        <button type="button" className="location-card-main" onClick={() => onEdit(location)}>
+          <span className="location-card-type">{TYPE_LABELS[location.type] || 'Altro'}</span>
+          <span className="location-card-name">{location.name}</span>
+          {location.description && (
+            <span className="location-card-desc">{location.description}</span>
+          )}
+        </button>
+      )}
 
-      <button
-        type="button"
-        className="location-card-toggle"
-        onClick={() => onToggleActive(location)}
-        aria-label={location.active ? 'Archivia' : 'Riattiva'}
-      >
-        {location.active ? 'Archivia' : 'Riattiva'}
-      </button>
+      {!readOnly && (
+        <button
+          type="button"
+          className="location-card-toggle"
+          onClick={() => onToggleActive(location)}
+          aria-label={location.active ? 'Archivia' : 'Riattiva'}
+        >
+          {location.active ? 'Archivia' : 'Riattiva'}
+        </button>
+      )}
     </div>
   );
 }

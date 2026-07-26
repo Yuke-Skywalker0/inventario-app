@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { listProducts } from '../api/products';
 import { offlineAwareAdjust, offlineAwareCreateProduct } from '../offline/offlineActions';
 import { listLocations } from '../api/locations';
+import { useAuth } from '../context/AuthContext';
 import BottomSheet from '../components/BottomSheet';
 import ProductForm from '../components/ProductForm';
 import ProductCard from '../components/ProductCard';
@@ -25,6 +26,8 @@ const STATUS_CHIPS = [
 
 export default function Home() {
   const { setFab } = useOutletContext();
+  const { role } = useAuth();
+  const canWrite = role !== 'viewer';
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('');
   const [advancedFilters, setAdvancedFilters] = useState({ locationId: '', category: '' });
@@ -60,10 +63,12 @@ export default function Home() {
   }, [query, status, advancedFilters, load]);
 
   useEffect(() => {
-    setFab({ label: 'Nuovo prodotto', onClick: () => setSheetOpen(true) });
+    if (canWrite) {
+      setFab({ label: 'Nuovo prodotto', onClick: () => setSheetOpen(true) });
+    }
     return () => setFab(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [canWrite]);
 
   useEffect(() => {
     listLocations({ includeInactive: true })
@@ -82,18 +87,23 @@ export default function Home() {
     setQuery(code);
   }
 
-  const handleVoiceResult = useCallback((transcript) => {
-    const command = parseVoiceCommand(transcript);
-    if (command.action === 'search') {
-      setQuery(command.query);
-    } else if (command.action === 'filter-low') {
-      setQuery('');
-      setStatus('low');
-    } else {
-      // 'remove' o 'add': mai eseguito subito, sempre conferma (Sezione 20)
-      setVoiceCommand(command);
-    }
-  }, []);
+  const handleVoiceResult = useCallback(
+    (transcript) => {
+      const command = parseVoiceCommand(transcript);
+      if (command.action === 'search') {
+        setQuery(command.query);
+      } else if (command.action === 'filter-low') {
+        setQuery('');
+        setStatus('low');
+      } else if (!canWrite) {
+        alert('Il tuo ruolo permette solo la consultazione, non modifiche.');
+      } else {
+        // 'remove' o 'add': mai eseguito subito, sempre conferma (Sezione 20)
+        setVoiceCommand(command);
+      }
+    },
+    [canWrite]
+  );
 
   const speech = useSpeechRecognition({ onResult: handleVoiceResult });
 
@@ -200,7 +210,7 @@ export default function Home() {
               key={product._id}
               product={product}
               locationsById={locationsById}
-              onQuickAdjust={handleQuickAdjust}
+              onQuickAdjust={canWrite ? handleQuickAdjust : null}
             />
           ))}
         </div>
