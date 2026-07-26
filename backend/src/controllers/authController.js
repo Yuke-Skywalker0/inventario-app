@@ -83,13 +83,16 @@ const register = asyncHandler(async (req, res) => {
     ownerId: user._id
   });
   await Member.create({ workspaceId: workspace._id, userId: user._id, role: 'owner' });
+  user.defaultWorkspaceId = workspace._id;
+  await user.save();
 
   const accessToken = await issueTokensAndSession(user, req, res, !!rememberMe);
 
   res.status(201).json({
     accessToken,
     user: { id: user._id, email: user.email, name: user.name },
-    workspace: { id: workspace._id, name: workspace.name }
+    workspace: { id: workspace._id, name: workspace.name },
+    role: 'owner'
   });
 });
 
@@ -115,12 +118,18 @@ const login = asyncHandler(async (req, res) => {
   }
 
   const accessToken = await issueTokensAndSession(user, req, res, !!rememberMe);
-  const workspace = await Workspace.findOne({ ownerId: user._id });
+  const workspace = user.defaultWorkspaceId ? await Workspace.findById(user.defaultWorkspaceId) : null;
+  let role = null;
+  if (workspace) {
+    const member = await Member.findOne({ workspaceId: workspace._id, userId: user._id });
+    role = member?.role || null;
+  }
 
   res.json({
     accessToken,
     user: { id: user._id, email: user.email, name: user.name },
-    workspace: workspace ? { id: workspace._id, name: workspace.name } : null
+    workspace: workspace ? { id: workspace._id, name: workspace.name } : null,
+    role
   });
 });
 

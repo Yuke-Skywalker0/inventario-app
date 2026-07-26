@@ -17,6 +17,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: ''
+    },
+    // Quando un utente appartiene a più workspace (il proprio + quelli a
+    // cui è stato invitato), questo determina quale vede di default.
+    // Cambiabile dal Profilo (Fase 10).
+    defaultWorkspaceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Workspace',
+      default: null
     }
   },
   { timestamps: true }

@@ -13,6 +13,10 @@ const locationsRoutes = require('./routes/locations');
 const productsRoutes = require('./routes/products');
 const shoppingListRoutes = require('./routes/shoppingList');
 const exportRoutes = require('./routes/export');
+const membersRoutes = require('./routes/members');
+const invitationsRoutes = require('./routes/invitations');
+const workspacesRoutes = require('./routes/workspaces');
+const importRoutes = require('./routes/import');
 
 const app = express();
 
@@ -44,6 +48,10 @@ app.use('/api/locations', locationsRoutes);
 app.use('/api/products', productsRoutes);
 app.use('/api/shopping-list', shoppingListRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/members', membersRoutes);
+app.use('/api/invitations', invitationsRoutes);
+app.use('/api/workspaces', workspacesRoutes);
+app.use('/api/import', importRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

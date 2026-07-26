@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const { requireAuth } = require('../middleware/auth');
 const { requireWorkspace } = require('../middleware/workspace');
+const { requireMinRole } = require('../middleware/permissions');
 const { list, listCategories, getOne, create, update, toggleArchived, adjust, transfer } = require('../controllers/productsController');
 const { upload: uploadImage, remove: removeImage } = require('../controllers/imagesController');
 const { listForProduct } = require('../controllers/movementsController');
@@ -18,16 +19,20 @@ const upload = multer({
 
 router.use(requireAuth, requireWorkspace);
 
+// Lettura: aperta a tutti i membri, incluso viewer.
 router.get('/', list);
 router.get('/meta/categories', listCategories);
-router.post('/', create);
 router.get('/:id', getOne);
-router.put('/:id', update);
-router.patch('/:id/toggle-archived', toggleArchived);
-router.post('/:id/adjust', adjust);
-router.post('/:id/transfer', transfer);
-router.post('/:id/images', upload.single('image'), uploadImage);
-router.delete('/:id/images', removeImage);
 router.get('/:id/movements', listForProduct);
+
+// Scrittura: tutti tranne viewer (Sezione 9: technician può gestire
+// prodotti/quantità/movimenti, non solo vederli).
+router.post('/', requireMinRole('technician'), create);
+router.put('/:id', requireMinRole('technician'), update);
+router.patch('/:id/toggle-archived', requireMinRole('technician'), toggleArchived);
+router.post('/:id/adjust', requireMinRole('technician'), adjust);
+router.post('/:id/transfer', requireMinRole('technician'), transfer);
+router.post('/:id/images', requireMinRole('technician'), upload.single('image'), uploadImage);
+router.delete('/:id/images', requireMinRole('technician'), removeImage);
 
 module.exports = router;

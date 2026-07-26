@@ -1,16 +1,19 @@
 const express = require('express');
+const multer = require('multer');
 const { requireAuth } = require('../middleware/auth');
 const { requireWorkspace } = require('../middleware/workspace');
 const { requireMinRole } = require('../middleware/permissions');
-const { list, addManual, removeManual, purchase } = require('../controllers/shoppingListController');
+const { importJson } = require('../controllers/importController');
 
 const router = express.Router();
 
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 }
+});
+
 router.use(requireAuth, requireWorkspace);
 
-router.get('/', list);
-router.post('/', requireMinRole('technician'), addManual);
-router.delete('/:id', requireMinRole('technician'), removeManual);
-router.post('/purchase', requireMinRole('technician'), purchase);
+router.post('/json', requireMinRole('admin'), upload.single('file'), importJson);
 
 module.exports = router;
