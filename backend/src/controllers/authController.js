@@ -10,6 +10,7 @@ const {
   hashToken
 } = require('../utils/jwt');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { resolveActiveWorkspace } = require('../services/workspaceResolver');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const REFRESH_COOKIE_NAME = 'refreshToken';
@@ -118,12 +119,7 @@ const login = asyncHandler(async (req, res) => {
   }
 
   const accessToken = await issueTokensAndSession(user, req, res, !!rememberMe);
-  const workspace = user.defaultWorkspaceId ? await Workspace.findById(user.defaultWorkspaceId) : null;
-  let role = null;
-  if (workspace) {
-    const member = await Member.findOne({ workspaceId: workspace._id, userId: user._id });
-    role = member?.role || null;
-  }
+  const { workspace, role } = await resolveActiveWorkspace(user._id);
 
   res.json({
     accessToken,
