@@ -78,6 +78,14 @@ progetto.
 Nessuno. Test automatici backend: 90/90 passati.
 
 ## Bug risolti
+- **[Fase 10] "Il tuo ruolo" vuoto per gli utenti creati prima della Fase 10**: `/api/me` e
+  `login` cercavano il workspace solo tramite `user.defaultWorkspaceId` (campo che non
+  esisteva ancora quando questi utenti si erano registrati), senza il ripiego automatico che
+  invece aveva `requireWorkspace` — da qui l'incoerenza (Team funzionava, "Il tuo ruolo" nel
+  Profilo no). Risolto centralizzando la logica in `services/workspaceResolver.js`, usata
+  ora da tutti e tre i punti, con auto-riparazione: al primo utilizzo dopo l'aggiornamento,
+  il `defaultWorkspaceId` mancante viene dedotto e salvato in modo permanente, per ogni
+  utente coinvolto, senza bisogno di uno script di migrazione manuale.
 - **[Deploy] `npm ci` fallito per `package-lock.json` fuori sincrono**: aggiunta manuale di
   `@playwright/test` a `package.json` senza rigenerare il lock file. Risolto rimuovendo la
   dipendenza dal progetto (i test restano, Playwright si installa a parte quando serve).
